@@ -1,0 +1,22 @@
+<activation-routing skill="team-meeting" version="1.0">
+
+  <defaults>
+    <rule>Always initialize repo meeting memory first.</rule>
+    <rule>Always load and use persona markdown files.</rule>
+    <rule>Always update the daily meeting note and meeting-state.json.</rule>
+  </defaults>
+
+  <routes>
+
+    <route id="team-meeting">
+      <when>team meeting, daily meeting, sync up, project sync, repo discussion, multiple perspectives, resume meeting, continue meeting, standup, discussion with team</when>
+      <goal>Run or resume the repo's daily multi-persona team meeting and persist the state.</goal>
+      <steps>
+        <step ref="steps/step-01-meeting-init.md">Load repo identity, meeting memory, and personas.</step>
+        <step ref="steps/step-02-discussion.md">Run the discussion and update meeting state.</step>
+      </steps>
+    </route>
+
+  </routes>
+
+</activation-routing>
