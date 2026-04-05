@@ -1,213 +1,102 @@
 # Step 01: Huddle Init
 
-`{skill-root}` = installed root folder of this skill.
+`HUDDLE_INIT` is already available from step-00. Do not re-run shell commands.
 
-## Inputs from Pre-flight
+## Extract from HUDDLE_INIT
 
-`REPO_NAME` and `OWNER_REPO` are already set by step-00. Use them directly.
+Set these variables for use throughout the session:
 
-If step-00 or `repo_context.py` reports local folder mode, continue normally using:
-- repo name from config or current folder name
-- branch = configured branch or `main`
-- user = configured local user or system username
+- `{GIT_USER}` = `HUDDLE_INIT.git_user`
+- `{BRANCH}` = `HUDDLE_INIT.branch`
+- `{REPO_NAME}` = `HUDDLE_INIT.repo_name`
+- `{HUDDLE_STATE_FILE}` = `HUDDLE_INIT.huddle_state_file`
+- `{HUDDLE_NOTE_FILE}` = `HUDDLE_INIT.huddle_note_file`
 
-## 1. Get Git User and Branch
+## Also Extract: Current Session Context
 
-```bash
-git config user.name
-git branch --show-current
-```
-
-- Set `GIT_USER` to the user.name output. Use this name throughout. If empty, use "you".
-- Set `BRANCH` to the current branch. Sanitise for filesystem: replace `/` with `-`, strip leading dots.
-  - Example: `feature/login-timeout` → `feature-login-timeout`
-- Set `BRANCH_DIR` = `~/config/.m-agent-skills/{REPO_NAME}/{BRANCH}/`
-- Set `HUDDLE_DIR` = `{BRANCH_DIR}/huddle/`
-
-If available, prefer this one-shot helper instead of multiple brittle shell calls:
-
-```bash
-python {skill-root}/scripts/repo_context.py snapshot
-```
-
-Use its JSON output as the source for:
-- `GIT_USER`
-- `BRANCH`
-- `REPO_NAME`
-- repo work state
-- whether `gh` / PR lookup should be skipped
-- warnings like "no remote found", "no commits yet", or "using local folder mode"
-
-## 2. Shared Config and Huddle Memory Layout
-
-```
-~/config/.m-agent-skills/{REPO_NAME}/
-├── config.json
-└── {BRANCH}/                      ← current branch folder for all skill state
-    └── huddle/
-        ├── huddle-state.json
-        └── {YYYY-MM-DD}.md
-```
-
-## 3. Load or Create Config
-
-```
-python {skill-root}/scripts/config_helper.py read {REPO_NAME}
-```
-
-- `NOT_FOUND` → initialize with `{ "reponame": "{REPO_NAME}" }` and save.
-- JSON output → use stored values.
-
-## 4. Ensure Huddle Memory
-
-```
-python {skill-root}/scripts/meeting_state.py ensure {REPO_NAME} {BRANCH} {YYYY-MM-DD}
-```
-
-Creates missing directories (including `{HUDDLE_DIR}`), `huddle-state.json`, and today's `{YYYY-MM-DD}.md` if they don't exist.
-
-This initialization should also ensure:
-- `graph-raw.json`
-- transient graph review derived from `graph-raw.json` when needed
-
-## 5. Gather Session Context (Highest Priority)
-
-This is the most important context source. Run before loading any huddle notes.
-
-### 5a. Current conversation history
-
-Review everything in the current session that happened **before the huddle was triggered**. This includes any Claude, Codex, or other agent activity visible in the conversation. Extract:
-
+Review everything in this conversation that happened **before the huddle was triggered** — any Claude, Codex, or other agent output. Extract:
 - What was the user working on or trying to solve?
 - What files were being edited or created?
-- What errors, blockers, or decisions came up?
-- What was left unresolved or in progress?
+- What errors or blockers came up?
 
-Store this as `{SESSION_CONTEXT}`. If nothing preceded the meeting trigger, `{SESSION_CONTEXT}` is empty.
+Store as `{SESSION_CONTEXT}`. Empty if nothing preceded the trigger.
 
-### 5b. Current repo work state
+## Load Persona Roster
 
-Run from `{project-root}`. Prefer the helper above. If you gather manually, run each command independently and do not let one failure cancel the others:
+Read `{skill-root}/references/persona-roster.xml`.
 
-```bash
-git status --short
-git diff --stat HEAD
-git log --oneline --since="8 hours ago"
-```
+Use it as the lightweight roster source of truth: `id`, `icon`, `name`, `title`, `domains`, persona file reference.
 
-Rules:
-- If `git rev-parse --verify HEAD` fails, skip `git diff --stat HEAD` and `git log`; this repo has no commits yet.
-- Never chain these into one shell command.
-- A failure in one probe must not cancel the rest.
+Do not load full persona body files during init. Only load the full persona file for the 2-3 personas selected for the current round, plus any persona explicitly named by `{GIT_USER}`.
 
-This captures what any tool (Claude, Codex, shell, IDE) has touched in this work session — modified files, staged changes, recent commits. Store as `{REPO_WORK_STATE}`.
+## Surface Warnings (all paths)
 
-### 5c. Open PRs (only if `GH_AVAILABLE=true`)
+If `HUDDLE_INIT.warnings` is non-empty, show each warning as a brief note before any greeting or persona output:
 
-```bash
-gh pr list --limit 5 --json number,title,author,headRefName,isDraft
-```
+> ⚠️ {warning text}
 
-Only run this if both of these are true:
-- `GH_AVAILABLE=true`
-- `OWNER_REPO` is non-empty or `git remote get-url origin` succeeded
+Example: `⚠️ No git remote configured — PR listing and project docs scan skipped.`
 
-If not, skip silently — leave `{OPEN_PRS}` empty.
+## Act on next_action
 
-## 6. Load Today's State
+Read `HUDDLE_INIT.next_action` and act immediately:
 
-**Current branch** (`{HUDDLE_DIR}`):
+### `"deepak_doc_offer"`
 
-If today's huddle note exists, extract:
-- topics already discussed
-- open questions
-- action items
-- decisions recorded (all attributed to `{GIT_USER}`)
-- most recently active personas
+Deepak speaks first. Do not show the roster yet.
 
-Also read the last 3 previous huddle notes from `{HUDDLE_DIR}` (by date, most recent first) and extract their `## Latest Summary` sections. Store as `{RECENT_MEETING_HISTORY}`.
+Brief `{GIT_USER}` on repo state from `HUDDLE_INIT.repo_work_state`, then Deepak says:
 
-**Cross-branch context:**
+> 📝 **Deepak** _(Tech Writer)_ — I don't see any project documentation yet. Want me to do a quick scan and write one?
 
-Scan all sibling branch folders under `~/config/.m-agent-skills/{REPO_NAME}/`. For each other branch:
-- Read its most recent `huddle/` note's `## Latest Summary` and `## Decisions` sections only
-- Prioritise: `main`, `master`, `dev`, `develop` first, then any branch whose name shares keywords with the current topic
-- Store as `{CROSS_BRANCH_CONTEXT}` — a brief per-branch digest, 1–2 lines each
+**Stop. Wait for `{GIT_USER}` to answer.**
 
-This gives the team awareness of decisions made in other branches without overloading context.
+- If yes → route to `steps/step-deepak-document.md` immediately
+- If no → set `DEEPAK_DOC_OFFERED=true`, show the roster, ask what to discuss
 
-## 6a. Search Scope Policy
+### `"resume_summary"`
 
-When the huddle needs to answer "where do we stand?", "what changed?", "what's the current state?", or any similar status/review question, search across all relevant repo context, not just one huddle note:
+Today's note already has content. From `HUDDLE_INIT.saved_state`, surface:
+- Last topic discussed
+- Open questions and action items
+- Active personas
 
-- current branch huddle state
-- recent huddle history on the current branch
-- relevant sibling-branch summaries
-- current repo work state (`git status`, `git diff --stat`, recent commits)
-- current session context before the huddle started
+If `{SESSION_CONTEXT}` or `HUDDLE_INIT.repo_work_state` shows new activity since last save, surface it:
+> "I can also see you've been working on X since we last met."
 
-Treat the current huddle Markdown file as the rendered review artifact, but not as the only source of truth.
+Restore active personas from `saved_state.active_personas`. Do not show the full roster unless `{GIT_USER}` asks to change the team.
 
-## 7. Load Personas
+Ask `{GIT_USER}`: "Where do you want to pick up?" Wait. Load step-02.
 
-Read `{skill-root}/references/persona-roster.xml` first.
+### `"show_roster"`
 
-Use it as the lightweight roster source of truth for:
-- `id`
-- `icon`
-- `name`
-- `title`
-- `domains`
-- persona file reference
+Fresh start. Greet `{GIT_USER}` by name. Write the huddle note header.
 
-Then read the referenced markdown files in `{skill-root}/references/personas/`.
-
-Startup optimization:
-- During init, use `persona-roster.xml` to show the roster and select candidates.
-- Do not fully read every persona body during startup.
-- Only load the full persona file for the 2-3 personas selected for the current round, plus any persona explicitly named by `{GIT_USER}`.
-
-For each persona, load and hold in memory:
-- frontmatter fields for the lightweight roster: `name`, `displayName`, `title`, `icon`, `role`, `domains`
-- defer `capabilities`, `identity`, `communicationStyle`, `principles`, and body sections until the persona is actually selected
-
-If any file is missing `name`, `displayName`, `communicationStyle`, or `principles`, stop and name the file.
-
-Build the roster in memory from `persona-roster.xml`. These entries are used for selection and file lookup in step-02.
-
-## 8. Open the Huddle
-
-**If resuming** (today's huddle note already has content):
-> Briefly summarize what was covered and what's unresolved. If `{SESSION_CONTEXT}` or `{REPO_WORK_STATE}` shows new activity since the last save, surface it: "I can also see you've been working on X since we last met." Then ask {GIT_USER}: "Where do you want to pick up?"
-
-**If starting fresh**:
-
-Greet {GIT_USER} by name. Start the huddle note with repo, date, and driver.
-
-Then, before asking what's on their mind, brief the team with what you've already observed. Format:
+Brief the team with what you've already observed:
 
 ```
 **Before we start — here's what I'm seeing:**
 
 [If {SESSION_CONTEXT} is not empty]
-**This session:** {2-4 bullet summary of what was happening before the meeting — what was being worked on, errors hit, decisions in flight}
+**This session:** {2-4 bullet summary}
 
-[If {REPO_WORK_STATE} shows changes]
-**Repo state:** {modified/staged files and recent commits — what's in progress or just shipped}
+[If repo_work_state.git_status or recent_commits are non-empty]
+**Repo state:** {modified/staged files and recent commits}
 
-[If {OPEN_PRS} is not empty]
-**Open PRs:** {list titles and authors, 1 line each}
+[If open_prs is non-empty]
+**Open PRs:** {title + author, one line each}
 
-[If {RECENT_MEETING_HISTORY} is not empty]
-**Last huddle(s) on `{BRANCH}`:** {1-line summary per recent huddle — key decisions and open items}
-
-[If {CROSS_BRANCH_CONTEXT} is not empty]
-**Other branches:** {1-line per branch — branch name + most recent decision or open item}
+[If recent_huddle_history is non-empty]
+**Last huddle(s):** {1-line summary per note}
 ```
 
-Omit any section that has nothing to show. If all sections are empty, skip the brief entirely.
+Omit any section with nothing to show. If all sections are empty, skip the brief entirely.
 
-Then show the available personas (displayName + title + icon, one line each) and ask:
+Show the persona roster (displayName + title + icon, one line each) and ask:
 > "{GIT_USER}, what do you want to work through today?"
 
-Wait for {GIT_USER} to respond before loading step-02.
+Wait for `{GIT_USER}` to respond before loading step-02.
+
+## Cross-Branch Context (all three paths)
+
+Scan sibling branch folders under `~/config/.m-agent-skills/{REPO_NAME}/`. For each other branch, read its most recent huddle note's `## Latest Summary` and `## Decisions` sections. Prioritise `main`, `master`, `dev`, `develop`. Store as `{CROSS_BRANCH_CONTEXT}` and surface if relevant.

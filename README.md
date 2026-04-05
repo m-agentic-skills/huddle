@@ -1,5 +1,9 @@
 # Huddle
 
+```bash
+npx skills add m-agentic-skills/huddle
+```
+
 Huddle is a repo-aware multi-persona discussion skill for engineering work.
 
 It helps you think through implementation, architecture, testing, security, product tradeoffs, communication artifacts, and current ecosystem signals without turning the interaction into roleplay theater. The user drives. The room reacts. Decisions stay with the user.

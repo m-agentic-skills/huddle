@@ -2,7 +2,7 @@
 name: huddle
 description: >
   Runs a repo-aware expert huddle for engineering decisions, planning, research, verification, and spec capture. Trigger this skill when the user says
-  anything like: "start a huddle", "open a huddle", "huddle up", "call a team meeting", "assemble the team", "get the experts in", "let's have a huddle",
+  anything like: "start a huddle", "open a huddle", "huddle up", "create a huddle", "call a team meeting", "assemble the team", "get the experts in", "let's have a huddle",
   "what does the team think", "I need multiple perspectives", "huddle up", "start a huddle", "open a huddle", "war room", "let's discuss this
   as a team", "bring in the team", "team sync", "daily standup", "what should we do about X", "help me
   think through this", "I'm stuck on X let's discuss", "resume the huddle", "continue our discussion",

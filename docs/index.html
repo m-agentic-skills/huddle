@@ -471,7 +471,14 @@
                 <div class="graph-actions">
                   <button id="graph-fullscreen" class="graph-button icon-only" type="button" title="Full screen" aria-label="Full screen">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M8 3H3v5"></path><path d="M3 3l6 6"></path><path d="M16 3h5v5"></path><path d="M21 3l-6 6"></path><path d="M8 21H3v-5"></path><path d="M3 21l6-6"></path><path d="M16 21h5v-5"></path><path d="M21 21l-6-6"></path>
+                      <path d="M9 4.5H4.5v4.3"></path>
+                      <path d="M4.8 4.8 9.2 9.1"></path>
+                      <path d="M15.2 4.4H19.6v4.5"></path>
+                      <path d="M19.2 4.7 14.8 9.2"></path>
+                      <path d="M9 19.6H4.4v-4.2"></path>
+                      <path d="M4.7 19.2 9 14.8"></path>
+                      <path d="M15.3 19.5h4.3v-4.4"></path>
+                      <path d="M19.3 19.1 14.9 14.8"></path>
                     </svg>
                   </button>
                   <button id="graph-close" class="graph-button icon-only" type="button" title="Close full screen" aria-label="Close full screen" hidden>
@@ -481,7 +488,15 @@
                   </button>
                   <button id="graph-fit" class="graph-button icon-only" type="button" title="Fit graph back" aria-label="Fit graph back">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M9 4H4v5"></path><path d="M4 4l6 6"></path><path d="M15 4h5v5"></path><path d="M20 4l-6 6"></path><path d="M9 20H4v-5"></path><path d="M4 20l6-6"></path><path d="M15 20h5v-5"></path><path d="M20 20l-6-6"></path><rect x="9" y="9" width="6" height="6" rx="1.2"></rect>
+                      <rect x="7.4" y="7.2" width="9.2" height="9.4" rx="1.4"></rect>
+                      <path d="M9.8 4.6H4.6v5"></path>
+                      <path d="M14.2 4.6h5.1v5"></path>
+                      <path d="M9.7 19.3H4.7v-5"></path>
+                      <path d="M14.3 19.3h5v-5.1"></path>
+                      <path d="M8.6 8.7 6.3 6.4"></path>
+                      <path d="M15.4 8.7 17.7 6.4"></path>
+                      <path d="M8.5 15.4 6.3 17.7"></path>
+                      <path d="M15.5 15.4 17.7 17.7"></path>
                     </svg>
                   </button>
                   <button id="graph-export" class="graph-button icon-only" type="button" title="Export PNG" aria-label="Export PNG">
@@ -548,6 +563,7 @@
       const decisions = state.decisions || [];
       const participants = state.participants || [];
       const openQuestions = state.open_questions || [];
+      const keyMoments = state.key_moments || [];
       const closed = decisions.filter((d) => d.status === "closed");
       const lastClosed = closed[closed.length - 1] || null;
 
@@ -573,6 +589,44 @@
         (d.linked_topics || []).forEach((tgt) => edges.push({ from: src, to: tgt, relation: "informs", label: "informs" }));
       });
 
+      if (nodes.length === 0) {
+        const topicId = "topic-root";
+        nodes.push({
+          id: topicId,
+          kind: "issue",
+          label: state.current_topic || "Huddle discussion",
+          status: "open",
+          icon: "💡",
+          why_it_matters: state.latest_summary || state.current_topic || "Current huddle status.",
+        });
+
+        openQuestions.slice(0, 3).forEach((question, index) => {
+          const nodeId = `open-question-${index}`;
+          nodes.push({
+            id: nodeId,
+            kind: "missing-question",
+            label: question,
+            status: "open",
+            icon: "❓",
+            why_it_matters: question,
+          });
+          edges.push({ from: topicId, to: nodeId, relation: "needs-answer", label: "needs answer" });
+        });
+
+        keyMoments.slice(0, 2).forEach((moment, index) => {
+          const nodeId = `moment-${index}`;
+          nodes.push({
+            id: nodeId,
+            kind: "evidence",
+            label: moment.summary || moment.title || moment.type || `Moment ${index + 1}`,
+            status: "noted",
+            icon: moment.icon || "📚",
+            why_it_matters: Array.isArray(moment.evidence) ? moment.evidence.join(" • ") : (moment.detail || moment.summary || ""),
+          });
+          edges.push({ from: nodeId, to: topicId, relation: "supports", label: "supports" });
+        });
+      }
+
       return {
         main_question: state.current_topic || decisions[0]?.topic || "Huddle discussion",
         decision: lastClosed?.decision || "No final decision recorded yet",
@@ -585,8 +639,11 @@
           id: p.id, name: p.name, icon: p.icon || "👤", meta: p.meta || "",
           influence: p.influence || "Participated in this huddle.",
         })),
-        key_moments: (state.key_moments || []).map((m, i) => ({
-          id: m.id || `m-${i}`, icon: m.icon || "💬", title: m.title || "", detail: m.detail || "",
+        key_moments: keyMoments.map((m, i) => ({
+          id: m.id || `m-${i}`,
+          icon: m.icon || "💬",
+          title: m.title || m.summary || m.type || `Moment ${i + 1}`,
+          detail: m.detail || (Array.isArray(m.evidence) ? m.evidence.join(" • ") : m.summary || ""),
         })),
         evidence: [...evidenceMap.values()],
         nodes,
@@ -826,6 +883,13 @@
       document.getElementById("graph-close").hidden = !isFullscreen;
     }
 
+    function fitGraph() {
+      if (!cyInstance) return;
+      cyInstance.resize();
+      cyInstance.fit(undefined, 40);
+      cyInstance.center();
+    }
+
     function initGraph(view) {
       const cy = cytoscape({
         container: document.getElementById("cy"),
@@ -890,10 +954,12 @@
       });
 
       cyInstance = cy;
-      window.addEventListener("resize", () => cy.resize());
+      requestAnimationFrame(() => fitGraph());
+      setTimeout(() => fitGraph(), 120);
+      window.addEventListener("resize", () => fitGraph());
       document.addEventListener("fullscreenchange", () => {
         syncGraphButtons();
-        requestAnimationFrame(() => cy.resize());
+        requestAnimationFrame(() => fitGraph());
       });
     }
 
@@ -906,9 +972,7 @@
         if (document.fullscreenElement) await document.exitFullscreen();
       });
       document.getElementById("graph-fit").addEventListener("click", () => {
-        if (!cyInstance) return;
-        cyInstance.fit(undefined, 40);
-        cyInstance.center();
+        fitGraph();
       });
       document.getElementById("graph-export").addEventListener("click", () => {
         if (!cyInstance) return;

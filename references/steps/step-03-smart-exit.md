@@ -16,8 +16,8 @@ Use natural wrap-up detection. Do not require explicit keywords.
     <field>action_items</field>
     <field>latest_summary</field>
     <field>active_personas</field>
-    <field>status</field>
     <field>decision_influencers</field>
+    <field>meeting_status — set to "paused" if user paused, "closed" if user fully ended the session</field>
   </persisted-state>
 
   <elango-rules>

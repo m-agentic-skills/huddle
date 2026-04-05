@@ -34,6 +34,53 @@
     <rule>Current-state review should consider repo work state, current branch huddle state, recent branch history, and relevant sibling-branch summaries together.</rule>
   </state-management>
 
+  <flow-control>
+
+    <!-- STOP — after every round -->
+    <rule>After every persona round, sub-task, or output: STOP and wait for {GIT_USER}'s natural response. Do not chain into the next action automatically.</rule>
+    <rule>Do not show a wrap-up or pause menu after every round — that is mechanical noise. Normal rounds end with a question or an open prompt to {GIT_USER}, then wait.</rule>
+    <rule>If a persona asks {GIT_USER} a direct question — stop the round immediately after that question. Do not let other personas continue. Display: _[Awaiting {GIT_USER}...]_ and wait.</rule>
+    <rule>Do not auto-advance to wrap-up, next topic, or next persona without {GIT_USER} signalling to do so.</rule>
+
+    <!-- SMART EXIT — only when work is naturally done -->
+    <rule>Surface a completion checkpoint ONLY when the current round clearly completed {GIT_USER}'s stated objective for this topic. Use the step-02 completion-aware wrap prompt:
+      "We've covered the main objective for this round.
+       Done: X, Y, Z
+       Open: A
+       {GIT_USER}, want to wrap here, save and pause, or keep going?"
+      Do not show this after every round — only when genuine completion is detected.</rule>
+    <rule>Recognised exit triggers always route to step-03-smart-exit.md immediately: "that's enough", "wrap up", "end meeting", "close the huddle", "save and pause", "pause here", "stop here", "good for now".</rule>
+    <rule>Pause is a first-class exit path. Set meeting_status="paused" in huddle-state.json. Do not treat pause as close.</rule>
+
+    <!-- RETURN — how sub-tasks hand back to the huddle -->
+    <rule>Every sub-task step (e.g. step-deepak-document, research mode, spec output) must end with an explicit RETURN PROTOCOL block that:
+      1. Announces completion briefly
+      2. Re-reads step-02-discussion.md to restore the discussion loop
+      3. Restores active_personas and current_topic from huddle-state.json
+      4. Asks: "{GIT_USER}, want to pick up where we left off or take this in a new direction?"
+      5. Waits for {GIT_USER} before continuing.
+      6. When {GIT_USER} responds affirmatively ("yes", "pick up", etc.):
+         - If current_topic is set → restore active_personas and resume that topic directly in step-02
+         - If current_topic is null → huddle hasn't started yet; show the persona roster and ask what to discuss
+      7. When {GIT_USER} gives a new topic → route into step-02 with that topic directly.</rule>
+    <rule>Sub-task steps do not chain to another persona or sub-task. One sub-task runs, returns, stops.</rule>
+    <rule>After every sub-task return, Elango updates huddle-state.json silently before the next turn.</rule>
+
+    <!-- RESUME — re-entering after a break or new session -->
+    <rule>If today's huddle note already has content when the huddle opens — always treat it as a resume, never a fresh start.</rule>
+    <rule>On resume: summarize what was covered, surface open questions and action items, note any new repo activity since last save. Then ask {GIT_USER} where to pick up. Wait.</rule>
+    <rule>On resume: restore active_personas from huddle-state.json. Do not show the full roster unless {GIT_USER} asks to change the team.</rule>
+    <rule>meeting_status in huddle-state.json drives resume behaviour:
+      "active"  → mid-session resume, restore and continue
+      "paused"  → deliberate pause, summarise and ask where to pick up
+      "closed"  → previous session ended, start fresh but load history as context</rule>
+
+    <!-- HANDOFF — persona takes a task, returns -->
+    <rule>When {GIT_USER} asks a specific persona to do a task: that persona runs the task, announces completion, and invokes its RETURN PROTOCOL. It does not continue conversationally.</rule>
+    <rule>Persona task handoffs are single-turn: one persona runs, returns result, hands back to the huddle loop.</rule>
+
+  </flow-control>
+
   <routes>
 
     <route id="start-meeting" mode="discussion">
@@ -125,6 +172,14 @@
       <goal>After or during wrap-up, let Elango launch the current huddle review bundle and open it in the browser for a final review.</goal>
       <steps>
         <step ref="steps/step-03-smart-exit.md">Use the browser review bundle flow on the current huddle note.</step>
+      </steps>
+    </route>
+
+    <route id="document-project" mode="spec-review">
+      <when>document this project, write project docs, deepak document this, get deepak to document, write the project documentation</when>
+      <goal>Deepak does a quick repo scan and writes project.md to the repo config area. Runs once; skips if no changes since last scan unless explicitly requested.</goal>
+      <steps>
+        <step ref="steps/step-deepak-document.md">Deepak scans the repo and writes project.md and updates project-state.json.</step>
       </steps>
     </route>
 
