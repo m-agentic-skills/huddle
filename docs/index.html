@@ -3,36 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Huddle Review Surface</title>
+  <title>Huddle Conversation Graph</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E" />
   <style>
     *, *::before, *::after { box-sizing: border-box; }
+
+    @font-face {
+      font-family: "Virgil";
+      src: url("./assets/fonts/Virgil-Regular.woff2") format("woff2");
+      font-display: swap;
+    }
 
     :root {
       --ink: #0f172a;
       --muted: #64748b;
       --line: rgba(15, 23, 42, 0.10);
-      --panel: rgba(255, 255, 255, 0.96);
-      --panel-soft: rgba(248, 250, 252, 0.92);
-      --page: linear-gradient(180deg, #edf6ff 0%, #f8fafc 44%, #eef2ff 100%);
-      --teal: #0f766e;
-      --blue: #2563eb;
-      --amber: #b45309;
-      --rose: #be123c;
-      --slate: #475569;
+      --panel: rgba(255, 255, 255, 0.95);
+      --soft: rgba(248, 250, 252, 0.96);
       --shadow: 0 28px 80px rgba(15, 23, 42, 0.10);
     }
 
-    html, body { min-height: 100%; }
-
     body {
       margin: 0;
+      min-height: 100vh;
       color: var(--ink);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-      background:
-        radial-gradient(circle at top left, rgba(34, 197, 94, 0.10), transparent 24%),
-        radial-gradient(circle at top right, rgba(59, 130, 246, 0.12), transparent 26%),
-        var(--page);
+      font-family: "Virgil", "Segoe UI", "Segoe UI Emoji", Helvetica, Arial, sans-serif;
+      background: #ffffff;
     }
 
     #loading-overlay {
@@ -43,24 +39,27 @@
       justify-content: center;
       flex-direction: column;
       gap: 12px;
-      background: white;
+      background: #ffffff;
       z-index: 100;
     }
 
     #loading-overlay.hidden { display: none; }
-    #loading-msg { color: var(--muted); font-size: 14px; }
+    #loading-msg {
+      color: var(--muted);
+      font-size: 14px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
 
     .page {
-      width: min(1180px, calc(100% - 28px));
-      margin: 24px auto 44px;
+      width: min(1280px, calc(100% - 28px));
+      margin: 24px auto 40px;
       display: none;
     }
 
     .surface {
       border-radius: 28px;
-      border: 1px solid rgba(255, 255, 255, 0.55);
-      background: rgba(255, 255, 255, 0.62);
-      backdrop-filter: blur(18px);
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
       box-shadow: var(--shadow);
       padding: 20px;
     }
@@ -69,91 +68,37 @@
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
-      gap: 20px;
-      padding: 8px 4px 18px;
+      gap: 16px;
+      margin-bottom: 16px;
     }
 
     .hero h1 {
-      margin: 0 0 6px;
-      font-size: clamp(1.7rem, 4vw, 2.5rem);
+      margin: 0 0 8px;
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
       line-height: 1;
       letter-spacing: -0.05em;
     }
 
     .hero p {
       margin: 0;
-      max-width: 720px;
+      max-width: 820px;
       color: var(--muted);
       line-height: 1.5;
-    }
-
-    .hero-meta {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     }
 
     .pill {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      border-radius: 999px;
       padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.88);
       font-size: 0.82rem;
       font-weight: 700;
-      background: rgba(255, 255, 255, 0.88);
-      border: 1px solid var(--line);
-      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     }
-
-    .room {
-      border-radius: 24px;
-      border: 1px solid var(--line);
-      background: var(--panel);
-      padding: 18px;
-      margin-bottom: 18px;
-    }
-
-    .section-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-
-    .section-head h2 {
-      margin: 0;
-      font-size: 1rem;
-      letter-spacing: -0.02em;
-    }
-
-    .section-head p {
-      margin: 4px 0 0;
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
-
-    .participants {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .participant {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
-      border-radius: 999px;
-      background: var(--panel-soft);
-      border: 1px solid var(--line);
-    }
-
-    .participant .emoji { font-size: 1rem; }
-    .participant .name { font-weight: 800; }
-    .participant .meta { font-size: 0.84rem; color: var(--muted); }
 
     .tabs {
       display: flex;
@@ -164,23 +109,31 @@
 
     .tab {
       appearance: none;
-      border: 0;
+      border: 1px solid var(--line);
       border-radius: 999px;
-      padding: 12px 16px;
-      background: rgba(255, 255, 255, 0.82);
+      padding: 10px 14px;
+      background: #ffffff;
       color: var(--muted);
-      font-weight: 800;
+      font-weight: 700;
       cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     }
 
     .tab.active {
-      color: white;
-      background: linear-gradient(135deg, var(--teal), var(--blue));
-      box-shadow: 0 16px 34px rgba(37, 99, 235, 0.18);
+      color: #ffffff;
+      background: #1d4ed8;
+      border-color: #1d4ed8;
     }
 
     .view { display: none; }
     .view.active { display: block; }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 2fr 1.4fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
 
     .panel {
       border-radius: 24px;
@@ -189,241 +142,185 @@
       padding: 18px;
     }
 
-    .spec-wrap {
-      max-width: 900px;
-      margin: 0 auto;
+    .panel h2 {
+      margin: 0 0 6px;
+      font-size: 1.04rem;
+      letter-spacing: -0.02em;
     }
 
-    .story {
-      display: grid;
-      grid-template-columns: 360px minmax(0, 1fr);
-      gap: 16px;
-    }
-
-    .feed {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      max-height: 760px;
-      overflow: auto;
-      padding-right: 4px;
-    }
-
-    .event-card, .node-card, .connector-card {
-      border-radius: 18px;
-      border: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.98);
-      padding: 14px;
-      text-align: left;
-    }
-
-    .event-card.active {
-      border-color: rgba(37, 99, 235, 0.26);
-      box-shadow: 0 16px 36px rgba(37, 99, 235, 0.12);
-    }
-
-    .time {
-      display: block;
-      margin-bottom: 10px;
-      color: var(--muted);
-      font-size: 0.74rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      border-radius: 999px;
-      padding: 5px 9px;
-      font-size: 0.78rem;
-      font-weight: 800;
-      margin-bottom: 10px;
-    }
-
-    .tag.active, .tag.idea { background: rgba(37, 99, 235, 0.10); color: var(--blue); }
-    .tag.linked, .tag.connection { background: rgba(15, 118, 110, 0.10); color: var(--teal); }
-    .tag.agreed, .tag.decision { background: rgba(16, 185, 129, 0.12); color: #047857; }
-    .tag.deferred { background: rgba(245, 158, 11, 0.14); color: var(--amber); }
-    .tag.open, .tag.question { background: rgba(190, 24, 93, 0.10); color: var(--rose); }
-    .tag.challenged { background: rgba(100, 116, 139, 0.12); color: var(--slate); }
-
-    .title {
+    .panel p {
       margin: 0;
-      font-size: 1.02rem;
+      color: var(--muted);
+      line-height: 1.45;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+
+    .question-block {
+      display: grid;
+      gap: 10px;
+    }
+
+    .question-block strong {
+      font-size: 1.1rem;
       line-height: 1.25;
       letter-spacing: -0.02em;
     }
 
-    .detail {
-      margin: 8px 0 0;
-      color: var(--muted);
-      line-height: 1.45;
-      font-size: 0.93rem;
-    }
-
-    .who {
-      margin-top: 10px;
-      color: var(--muted);
-      font-size: 0.84rem;
-    }
-
-    .history-stage, .current-stage {
-      border-radius: 22px;
-      border: 1px solid var(--line);
-      background:
-        radial-gradient(circle at top, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
-      padding: 18px;
-      min-height: 720px;
-    }
-
-    .stage-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 14px;
-    }
-
-    .stage-head h3 {
-      margin: 0;
-      font-size: 0.94rem;
-      letter-spacing: -0.02em;
-    }
-
-    .controls {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
-    }
-
-    .button {
-      appearance: none;
-      border: 0;
-      border-radius: 999px;
-      padding: 10px 16px;
-      background: linear-gradient(135deg, #f97316, #ea580c);
-      color: white;
-      font-weight: 800;
-      cursor: pointer;
-    }
-
-    .range { flex: 1 1 280px; }
-    .range input { width: 100%; }
-
-    .history-graph-wrap {
-      border-radius: 20px;
-      border: 1px solid var(--line);
-      background:
-        radial-gradient(circle at top, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
-      overflow: hidden;
-    }
-
-    .history-graph-toolbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 12px 14px;
-      border-bottom: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.85);
-    }
-
-    .history-graph-toolbar p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 0.86rem;
-    }
-
-    .history-legend {
+    .chips {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
+      margin-top: 12px;
     }
 
-    .legend-chip {
+    .chip {
       display: inline-flex;
       align-items: center;
       gap: 6px;
+      padding: 7px 10px;
       border-radius: 999px;
-      padding: 6px 9px;
-      font-size: 0.76rem;
+      font-size: 0.8rem;
       font-weight: 700;
       border: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.88);
+      background: var(--soft);
       color: var(--muted);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     }
 
-    #history-graph {
-      width: 100%;
-      height: 560px;
-    }
-
-    .state-summary {
+    .layout {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-      margin-bottom: 16px;
+      grid-template-columns: 320px minmax(0, 1fr);
+      gap: 16px;
     }
 
-    .summary-card {
-      border-radius: 18px;
-      border: 1px solid var(--line);
-      background: var(--panel-soft);
-      padding: 14px;
-    }
-
-    .summary-card .label {
-      display: block;
-      color: var(--muted);
-      font-size: 0.74rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .summary-card .value {
-      display: block;
-      margin-top: 8px;
-      font-size: 1.3rem;
-      font-weight: 800;
-      letter-spacing: -0.04em;
-    }
-
-    .state-board {
+    .side-stack {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 14px;
-      align-items: start;
-    }
-
-    .state-column {
-      display: grid;
-      gap: 10px;
+      gap: 16px;
       align-content: start;
     }
 
-    .state-column h3 {
-      margin: 0 0 2px;
-      font-size: 0.83rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--muted);
-    }
-
-    .connector-list {
+    .list {
       display: grid;
       gap: 10px;
-      margin-top: 16px;
+      margin-top: 12px;
     }
 
-    .empty {
+    .list-card {
       border-radius: 18px;
-      border: 1px dashed var(--line);
-      background: rgba(248, 250, 252, 0.84);
+      border: 1px solid var(--line);
+      background: var(--soft);
+      padding: 12px;
+    }
+
+    .list-card strong {
+      display: block;
+      margin-bottom: 6px;
+      line-height: 1.25;
+    }
+
+    .list-card small {
+      display: block;
       color: var(--muted);
+      line-height: 1.45;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+
+    .graph-panel {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .graph-head {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .graph-head p { margin: 0; }
+
+    .graph-head-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .graph-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      flex-shrink: 0;
+    }
+
+    .graph-button {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: #ffffff;
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+
+    .graph-button.icon-only {
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 0;
+    }
+
+    .graph-button svg {
+      width: 17px;
+      height: 17px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .graph-button:hover {
+      border-color: #cbd5e1;
+      color: var(--ink);
+    }
+
+    .graph-button[hidden] { display: none; }
+
+    #cy {
+      width: 100%;
+      height: 760px;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background: #ffffff;
+    }
+
+    .graph-panel:fullscreen {
+      width: 100vw;
+      height: 100vh;
+      max-width: none;
+      margin: 0;
+      border-radius: 0;
+      padding: 24px;
+      background: #ffffff;
+    }
+
+    .graph-panel:fullscreen #cy {
+      height: calc(100vh - 116px);
+      border-radius: 24px;
+    }
+
+    .markdown-wrap {
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background: #ffffff;
       padding: 18px;
     }
 
@@ -431,13 +328,13 @@
       max-width: none;
       margin: 0;
       padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     }
 
     .markdown-body h1, .markdown-body h2 {
       padding-bottom: .3em;
       border-bottom: 1px solid #d1d9e0b3;
     }
-
     .markdown-body h1 { font-size: 2em; margin: .67em 0; }
     .markdown-body h2 { font-size: 1.5em; margin: 1.2em 0 .6em; }
     .markdown-body h3 { font-size: 1.25em; }
@@ -448,13 +345,11 @@
       margin-top: 24px;
       margin-bottom: 16px;
     }
-
     .markdown-body p, .markdown-body blockquote, .markdown-body ul, .markdown-body ol,
     .markdown-body dl, .markdown-body table, .markdown-body pre, .markdown-body details {
       margin-top: 0;
       margin-bottom: 16px;
     }
-
     .markdown-body a { color: #0969da; text-decoration: none; }
     .markdown-body a:hover { text-decoration: underline; }
     .markdown-body code {
@@ -464,7 +359,6 @@
       padding: .2em .4em;
       border-radius: 6px;
     }
-
     .markdown-body pre {
       background-color: #f6f8fa;
       border-radius: 6px;
@@ -473,762 +367,488 @@
       font-size: 85%;
       line-height: 1.45;
     }
-
     .markdown-body blockquote {
       color: #636c76;
       border-left: .25em solid #d1d9e0;
       padding: 0 1em;
       margin-left: 0;
     }
-
     .markdown-body table {
       border-spacing: 0;
       border-collapse: collapse;
       width: max-content;
       max-width: 100%;
     }
-
     .markdown-body table th, .markdown-body table td {
       padding: 6px 13px;
       border: 1px solid #d1d9e0;
     }
-
     .markdown-body table th { font-weight: 600; background-color: #f6f8fa; }
     .markdown-body table tr:nth-child(2n) { background-color: #f6f8fa; }
     .markdown-body ul, .markdown-body ol { padding-left: 2em; }
 
     @media (max-width: 1080px) {
-      .story,
-      .state-board,
-      .state-summary { grid-template-columns: 1fr; }
-      .page { width: min(100%, calc(100% - 16px)); }
-      .hero { flex-direction: column; }
-      .hero-meta { justify-content: flex-start; }
+      .summary-grid,
+      .layout {
+        grid-template-columns: 1fr;
+      }
+      .hero {
+        flex-direction: column;
+      }
+      #cy {
+        height: 620px;
+      }
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+  <script src="https://unpkg.com/cytoscape@3.30.2/dist/cytoscape.min.js"></script>
 </head>
 <body>
   <div id="loading-overlay">
-    <div>🎯 Huddle Review Surface</div>
+    <div>🔥 Huddle conversation graph</div>
     <div id="loading-msg">Loading…</div>
   </div>
 
   <main id="app-root" class="page">
-    <div class="surface">
+    <section class="surface">
       <header class="hero">
         <div>
-          <h1>Huddle review</h1>
-          <p>Read the spec, see how the room moved, and check where the room stands now without losing the discussion trail.</p>
+          <h1>Conversation graph</h1>
+          <p>The huddle graph, the people who shaped it, the moments that mattered, and the spec behind it.</p>
         </div>
-        <div class="hero-meta">
-          <span class="pill">📄 <span id="hero-source">Loading…</span></span>
-          <span class="pill">📐 Elango-owned state</span>
-        </div>
+        <span class="pill">📄 <span id="hero-source">Loading…</span></span>
       </header>
 
-      <section class="room">
-        <div class="section-head">
-          <div>
-            <h2>People in this huddle</h2>
-            <p>The room stays visible. Elango keeps the shared state updated underneath.</p>
-          </div>
-          <span class="pill">Current room</span>
-        </div>
-        <div id="room-people" class="participants"></div>
-      </section>
-
-      <section class="room">
-        <div class="section-head">
-          <div>
-            <h2>Evidence</h2>
-            <p>Repo references, local files, web links, or user context that grounded the room.</p>
-          </div>
-          <span class="pill">Grounding</span>
-        </div>
-        <div id="sources" class="list"></div>
-      </section>
-
       <nav class="tabs" aria-label="Huddle views">
-        <button class="tab active" data-view="spec-view">Spec</button>
-        <button class="tab" data-view="history-view">How the conversation evolved</button>
-        <button class="tab" data-view="current-view">Where we stand now</button>
+        <button class="tab active" data-view="graph-view">Conversation graph</button>
+        <button class="tab" data-view="spec-view">Spec</button>
       </nav>
 
-      <section id="spec-view" class="view active">
-        <div class="panel spec-wrap">
-          <div class="section-head">
-            <div>
-              <h2>Readable spec</h2>
-              <p>The human-readable projection of the current huddle.</p>
+      <section id="graph-view" class="view active">
+        <section class="summary-grid">
+          <article class="panel">
+            <h2>Main question</h2>
+            <div class="question-block">
+              <strong id="main-question"></strong>
+              <p id="decision-why"></p>
             </div>
-            <span class="pill">Markdown</span>
-          </div>
-          <article id="spec-content" class="markdown-body"></article>
-        </div>
-      </section>
+          </article>
+          <article class="panel">
+            <h2>What stands out</h2>
+            <div id="summary-chips" class="chips"></div>
+          </article>
+        </section>
 
-      <section id="history-view" class="view">
-        <div class="panel">
-          <div class="section-head">
-            <div>
-              <h2>How the conversation evolved</h2>
-              <p>What got added, challenged, linked, agreed, deferred, or left open as the room progressed.</p>
-            </div>
-            <span id="history-badge" class="pill">Conversation flow</span>
-          </div>
-          <div id="history-empty" class="empty" style="display:none;">No conversation graph is available in this bundle yet.</div>
-          <div id="history-content" class="story">
-            <div id="history-feed" class="feed"></div>
-            <div class="history-stage">
-              <div class="stage-head">
-                <h3>Reasoning trail</h3>
-                <span id="history-step" class="pill">Step 0</span>
-              </div>
-              <div class="controls">
-                <button id="history-play" class="button" type="button">▶ Play flow</button>
-                <div class="range"><input id="history-range" type="range" min="0" max="0" value="0" /></div>
-              </div>
-              <div class="history-graph-wrap">
-                <div class="history-graph-toolbar">
-                  <p>Graph view of who shaped the room, what ideas surfaced, and how decisions connected.</p>
-                  <div class="history-legend">
-                    <span class="legend-chip">👤 people</span>
-                    <span class="legend-chip">💡 ideas</span>
-                    <span class="legend-chip">✅ decisions</span>
-                    <span class="legend-chip">⚔️ tensions</span>
-                  </div>
+        <section class="layout">
+          <aside class="side-stack">
+            <article class="panel">
+              <h2>People involved</h2>
+              <p>Who most shaped the room and how.</p>
+              <div id="participants" class="list"></div>
+            </article>
+
+            <article class="panel">
+              <h2>Key moments</h2>
+              <p>Compressed evolution, not every raw event.</p>
+              <div id="timeline" class="list"></div>
+            </article>
+
+            <article class="panel">
+              <h2>Evidence</h2>
+              <p>What grounded the room.</p>
+              <div id="sources" class="list"></div>
+            </article>
+          </aside>
+
+          <article class="panel graph-panel">
+            <div class="graph-head">
+              <div class="graph-head-top">
+                <div>
+                  <h2>🔥 Conversation graph</h2>
+                  <p>💡 issues, ⚔️ challenges, ✅ decisions, ❓ missed questions, and 📚 evidence connected as a readable graph.</p>
                 </div>
-                <div id="history-graph"></div>
+                <div class="graph-actions">
+                  <button id="graph-fullscreen" class="graph-button icon-only" type="button" title="Full screen" aria-label="Full screen">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M8 3H3v5"></path><path d="M3 3l6 6"></path><path d="M16 3h5v5"></path><path d="M21 3l-6 6"></path><path d="M8 21H3v-5"></path><path d="M3 21l6-6"></path><path d="M16 21h5v-5"></path><path d="M21 21l-6-6"></path>
+                    </svg>
+                  </button>
+                  <button id="graph-close" class="graph-button icon-only" type="button" title="Close full screen" aria-label="Close full screen" hidden>
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M6 6l12 12"></path><path d="M18 6L6 18"></path>
+                    </svg>
+                  </button>
+                  <button id="graph-fit" class="graph-button icon-only" type="button" title="Fit graph back" aria-label="Fit graph back">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M9 4H4v5"></path><path d="M4 4l6 6"></path><path d="M15 4h5v5"></path><path d="M20 4l-6 6"></path><path d="M9 20H4v-5"></path><path d="M4 20l6-6"></path><path d="M15 20h5v-5"></path><path d="M20 20l-6-6"></path><rect x="9" y="9" width="6" height="6" rx="1.2"></rect>
+                    </svg>
+                  </button>
+                  <button id="graph-export" class="graph-button icon-only" type="button" title="Export PNG" aria-label="Export PNG">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M12 4v10"></path><path d="M8 10l4 4 4-4"></path><path d="M5 19h14"></path>
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+            <div id="cy"></div>
+          </article>
+        </section>
       </section>
 
-      <section id="current-view" class="view">
-        <div class="panel">
-          <div class="section-head">
-            <div>
-              <h2>Where we stand now</h2>
-              <p>The latest agreed, active, open, and deferred state of the room.</p>
-            </div>
-            <span class="pill">Latest shared state</span>
-          </div>
-          <div id="current-empty" class="empty" style="display:none;">No readable standing view could be derived from this graph bundle yet.</div>
-          <div id="current-content">
-            <div id="current-summary" class="state-summary"></div>
-            <div id="current-map" class="state-board"></div>
-            <div id="current-connections" class="connector-list"></div>
-          </div>
-        </div>
+      <section id="spec-view" class="view">
+        <article class="markdown-wrap">
+          <h2>Spec</h2>
+          <article id="spec-content" class="markdown-body"></article>
+        </article>
       </section>
-    </div>
+    </section>
   </main>
 
-  <script>
+  <script type="module">
+    import { prepareWithSegments, walkLineRanges, layout } from "https://esm.sh/@chenglou/pretext?bundle";
+
+    const cytoscape = window.cytoscape;
+    let cyInstance = null;
+
     function requireFields(obj, fields, context) {
       const missing = fields.filter((field) => !obj[field]);
       if (missing.length) throw new Error(`${context} missing required fields: ${missing.join(', ')}`);
     }
 
     function validateGraphViewPayload(data) {
-      requireFields(data, ['main_question', 'decision', 'decision_why'], 'graph-view');
-      safeArray(data.what_stands_out).forEach((item, index) => requireFields(item, ['icon', 'text'], `graph-view what_stands_out[${index}]`));
-      safeArray(data.people_involved).forEach((person, index) => requireFields(person, ['id', 'name', 'icon', 'meta', 'influence'], `graph-view people_involved[${index}]`));
-      safeArray(data.key_moments).forEach((moment, index) => requireFields(moment, ['id', 'icon', 'title', 'detail'], `graph-view key_moments[${index}]`));
-      safeArray(data.evidence).forEach((item, index) => requireFields(item, ['id', 'icon', 'label', 'kind', 'ref', 'note'], `graph-view evidence[${index}]`));
-      safeArray(data.nodes).forEach((node, index) => requireFields(node, ['id', 'kind', 'label', 'status', 'icon', 'why_it_matters'], `graph-view nodes[${index}]`));
-      safeArray(data.edges).forEach((edge, index) => requireFields(edge, ['from', 'to', 'relation', 'label'], `graph-view edges[${index}]`));
-    }
-
-    function titleCase(value) {
-      return String(value || '')
-        .split(/[-_\s]+/)
-        .filter(Boolean)
-        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-        .join(' ');
-    }
-
-    function kindToStatus(kind) {
-      const map = {
-        agreed: 'agreed',
-        deferred: 'deferred',
-        challenged: 'challenged',
-        'missed-question': 'open',
-        unresolved: 'open',
-        rejected: 'challenged',
-        linked: 'active',
-        raised: 'active',
-      };
-      return map[kind] || 'active';
-    }
-
-    function statusIcon(status) {
-      const map = {
-        agreed: '✅',
-        deferred: '⏸️',
-        open: '❓',
-        challenged: '⚔️',
-        active: '💡',
-      };
-      return map[status] || '📝';
-    }
-
-    function normalizeGraphViewBundle(bundle) {
-      if (bundle.view || bundle.graph_view) {
-        return {
-          markdown: bundle.markdown,
-          source: bundle.source,
-          graphView: bundle.view || bundle.graph_view,
-        };
-      }
-
-      const history = bundle.history || {};
-      const current = bundle.current || {};
-      const agreedNode = safeArray(current.nodes).find((node) => node.status === 'agreed');
-      const firstEvent = safeArray(history.events)[0];
-      const graphView = {
-        session_id: history.session_id || current.session_id || '',
-        generated_at: current.updated_at || history.generated_at || '',
-        main_question: firstEvent?.display_title || 'Huddle discussion',
-        decision: agreedNode?.label || 'Legacy huddle bundle adapted into graph view',
-        decision_why: agreedNode?.display_detail || firstEvent?.display_detail || 'This view was derived from older history/current artifacts.',
-        what_stands_out: [
-          ...(safeArray(history.events).slice(0, 2).map((event) => ({
-            icon: statusIcon(event.status || 'active'),
-            text: event.display_title,
-          }))),
-          ...(agreedNode ? [{ icon: '✅', text: agreedNode.label }] : []),
-        ],
-        people_involved: safeArray(current.participants).map((person, index) => ({
-          id: person.id || `p-${index}`,
-          name: person.name,
-          icon: person.icon,
-          meta: person.meta,
-          influence: person.influence || person.meta,
-        })),
-        key_moments: safeArray(history.events).map((event, index) => ({
-          id: event.id || `m-${index}`,
-          icon: event.actor?.icon || event.node?.icon || statusIcon(event.status),
-          title: event.display_title,
-          detail: event.display_detail,
-          ts: event.ts || '',
-          actor_id: event.actor?.id || '',
-          kind: event.display_class || event.status || 'active',
-          status: event.status || 'active',
-        })),
-        evidence: [],
-        nodes: safeArray(current.nodes).map((node) => ({
-          id: node.id,
-          kind: node.type,
-          label: node.label,
-          status: node.status,
-          icon: node.icon,
-          why_it_matters: node.display_detail,
-          source_refs: [],
-        })),
-        edges: safeArray(current.edges).map((edge) => ({
-          from: edge.from,
-          to: edge.to,
-          relation: edge.type || edge.label,
-          label: edge.label,
-          status: edge.status || 'active',
-          source_refs: [],
-        })),
-      };
-      return { markdown: bundle.markdown, source: bundle.source, graphView };
+      requireFields(data, ["main_question", "decision", "decision_why"], "graph-view");
+      (data.what_stands_out || []).forEach((item, index) => requireFields(item, ["icon", "text"], `graph-view what_stands_out[${index}]`));
+      (data.people_involved || []).forEach((person, index) => requireFields(person, ["id", "name", "icon", "meta", "influence"], `graph-view people_involved[${index}]`));
+      (data.key_moments || []).forEach((moment, index) => requireFields(moment, ["id", "icon", "title", "detail"], `graph-view key_moments[${index}]`));
+      (data.evidence || []).forEach((item, index) => requireFields(item, ["id", "icon", "label", "kind", "ref", "note"], `graph-view evidence[${index}]`));
+      (data.nodes || []).forEach((node, index) => requireFields(node, ["id", "kind", "label", "status", "icon", "why_it_matters"], `graph-view nodes[${index}]`));
+      (data.edges || []).forEach((edge, index) => requireFields(edge, ["from", "to", "relation", "label"], `graph-view edges[${index}]`));
     }
 
     function decodeUrlSafeBase64(input) {
-      const normalized = input.replace(/-/g, '+').replace(/_/g, '/');
-      const padding = normalized.length % 4 === 0 ? '' : '='.repeat(4 - (normalized.length % 4));
+      const normalized = input.replace(/-/g, "+").replace(/_/g, "/");
+      const padding = normalized.length % 4 === 0 ? "" : "=".repeat(4 - (normalized.length % 4));
       return atob(normalized + padding);
     }
 
     function logStep(label, detail) {
       if (detail === undefined) {
         console.log(`[huddle] ${label}`);
-        return;
+      } else {
+        console.log(`[huddle] ${label}`, detail);
       }
-      console.log(`[huddle] ${label}`, detail);
     }
 
-    function decompress(b64) {
-      logStep('decode:start', { hashLength: b64.length });
-      const binary = decodeUrlSafeBase64(b64);
-      logStep('decode:base64-complete', { binaryLength: binary.length });
+    function decompress(hash) {
+      logStep("decode:start", { hashLength: hash.length });
+      const binary = decodeUrlSafeBase64(hash);
       const bytes = new Uint8Array(binary.length);
       for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
-      logStep('decode:inflate-start', { compressedBytes: bytes.length });
       const inflated = window.pako.inflate(bytes);
-      logStep('decode:inflate-complete', { inflatedBytes: inflated.length });
       const text = new TextDecoder().decode(inflated);
-      logStep('decode:text-ready', { textLength: text.length });
+      logStep("decode:complete", { textLength: text.length });
       return text;
     }
 
     function escapeHtml(value) {
-      return String(value)
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#39;');
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
     }
 
-    function safeArray(value) {
-      return Array.isArray(value) ? value : [];
+    function normalizeBundle(bundle) {
+      if (bundle.view || bundle.graph_view) {
+        return {
+          markdown: bundle.markdown || "",
+          source: bundle.source || "huddle.md",
+          graphView: bundle.view || bundle.graph_view,
+        };
+      }
+      throw new Error("Unsupported bundle shape. Expected `view` or `graph_view`.");
     }
 
-    function participantHtml(person) {
-      return `
-        <div class="participant">
-          <span class="emoji">${escapeHtml(person.icon)}</span>
-          <span class="name">${escapeHtml(person.name)}</span>
-          <span class="meta">${escapeHtml(person.meta)}</span>
-        </div>
-      `;
+    function renderSummary(view) {
+      document.getElementById("main-question").textContent = view.main_question;
+      document.getElementById("decision-why").textContent = `${view.decision} ${view.decision_why}`;
+      document.getElementById("summary-chips").innerHTML = (view.what_stands_out || []).map((item) =>
+        `<span class="chip">${escapeHtml(item.icon)} ${escapeHtml(item.text)}</span>`
+      ).join("");
     }
 
-    function tagHtml(status, displayTag) {
-      return `<span class="tag ${escapeHtml(status)} ${escapeHtml(status)}">${escapeHtml(displayTag)}</span>`;
-    }
-
-    function eventCardHtml(event, isActive) {
-      return `
-        <button type="button" class="event-card${isActive ? ' active' : ''}">
-          <span class="time">${escapeHtml(event.ts || '')}</span>
-          ${tagHtml(event.display_class, event.display_tag)}
-          <h4 class="title">${escapeHtml(event.display_title)}</h4>
-          <p class="detail">${escapeHtml(event.display_detail)}</p>
-          ${event.actor ? `<div class="who">${escapeHtml(event.actor.icon)} ${escapeHtml(event.actor.name)} · ${escapeHtml(event.actor.meta)}</div>` : ''}
-        </button>
-      `;
-    }
-
-    function nodeCardHtml(node) {
-      return `
-        <div class="node-card">
-          ${tagHtml(node.status, `${escapeHtml(node.icon)} ${escapeHtml(titleCase(node.kind || node.status))}`)}
-          <h4 class="title">${escapeHtml(node.label)}</h4>
-          <p class="detail">${escapeHtml(node.why_it_matters || '')}</p>
-        </div>
-      `;
-    }
-
-    function connectorCardHtml(edge) {
-      const edgeStatus = edge.status || 'active';
-      const edgeIcon = edge.icon || statusIcon(edgeStatus);
-      return `
-        <div class="connector-card">
-          ${tagHtml(edgeStatus, `${edgeIcon} ${edge.label}`)}
-          <p class="detail">
-            <strong>${escapeHtml(edge.from)}</strong>
-            ${escapeHtml((edge.label || edge.relation || '').toLowerCase())}
-            <strong>${escapeHtml(edge.to)}</strong>
-          </p>
-        </div>
-      `;
-    }
-
-    function renderEvidence(items) {
-      const sources = document.getElementById('sources');
-      sources.innerHTML = safeArray(items).map((item) => `
+    function renderParticipants(view) {
+      document.getElementById("participants").innerHTML = (view.people_involved || []).map((person) => `
         <div class="list-card">
-          <strong>${escapeHtml(item.icon)} ${escapeHtml(item.label)}</strong>
-          <small>${escapeHtml(item.kind)} · ${escapeHtml(item.ref)}</small>
-          <small>${escapeHtml(item.note)}</small>
+          <strong>${escapeHtml(person.icon)} ${escapeHtml(person.name)} <small>${escapeHtml(person.meta)}</small></strong>
+          <small>${escapeHtml(person.influence)}</small>
         </div>
-      `).join('');
+      `).join("");
     }
 
-    function statusColor(status) {
-      const map = {
-        active: '#2563eb',
-        linked: '#0f766e',
-        agreed: '#10b981',
-        deferred: '#d97706',
-        open: '#be123c',
-        challenged: '#475569',
-      };
-      return map[status] || '#64748b';
+    function renderTimeline(view) {
+      document.getElementById("timeline").innerHTML = (view.key_moments || []).map((item) => `
+        <div class="list-card">
+          <strong>${escapeHtml(item.icon)} ${escapeHtml(item.title)}</strong>
+          <small>${escapeHtml(item.detail)}</small>
+        </div>
+      `).join("");
     }
 
-    function nodeTypeSymbol(type) {
-      const map = {
-        person: 'circle',
-        issue: 'roundRect',
-        idea: 'roundRect',
-        option: 'roundRect',
-        challenge: 'diamond',
-        decision: 'diamond',
-        'missing-question': 'roundRect',
-        deferred: 'roundRect',
-        rejected: 'roundRect',
-        unresolved: 'roundRect',
-        evidence: 'roundRect',
-      };
-      return map[type] || 'roundRect';
+    function renderSources(view) {
+      document.getElementById("sources").innerHTML = (view.evidence || []).map((source) => `
+        <div class="list-card">
+          <strong>${escapeHtml(source.icon)} ${escapeHtml(source.label)}</strong>
+          <small>${escapeHtml(source.kind)} · <a href="${escapeHtml(source.ref)}" target="_blank" rel="noreferrer">${escapeHtml(source.ref)}</a></small>
+          <small>${escapeHtml(source.note)}</small>
+        </div>
+      `).join("");
     }
 
-    function buildHistoryGraph(view) {
-      const nodes = [];
-      const links = [];
-      safeArray(view.people_involved).forEach((person) => {
-        nodes.push({
-          id: `person:${person.id}`,
-          name: `${person.icon} ${person.name}`,
-          value: person.influence,
-          symbol: 'circle',
-          symbolSize: 54,
-          category: 0,
-          itemStyle: {
-            color: '#ffffff',
-            borderColor: '#94a3b8',
-            borderWidth: 2,
-          },
-          label: { show: true, color: '#0f172a', fontSize: 12, fontWeight: 700 },
-        });
+    const kindShape = {
+      issue: "round-rectangle",
+      idea: "round-rectangle",
+      option: "round-rectangle",
+      challenge: "diamond",
+      decision: "diamond",
+      "missing-question": "round-rectangle",
+      deferred: "round-rectangle",
+      rejected: "round-rectangle",
+      unresolved: "round-rectangle",
+      evidence: "hexagon",
+    };
+
+    function measureNodeBox(node) {
+      const fontSize = node.kind === "decision" ? 15 : 14;
+      const font = `700 ${fontSize}px Virgil`;
+      const prepared = prepareWithSegments(`${node.icon} ${node.label}`, font);
+      const minTextWidth = 132;
+      const maxTextWidth = node.kind === "decision" ? 196 : 190;
+      let naturalWidth = 0;
+      walkLineRanges(prepared, Number.MAX_SAFE_INTEGER, (line) => {
+        naturalWidth = Math.max(naturalWidth, line.width);
       });
-      safeArray(view.nodes).forEach((node) => {
-        nodes.push({
-          id: node.id,
-          name: `${node.icon} ${node.label}`,
-          value: node.why_it_matters,
-          symbol: nodeTypeSymbol(node.kind),
-          symbolSize: node.kind === 'decision' ? 72 : 64,
-          category: 1,
-          itemStyle: {
-            color: '#ffffff',
-            borderColor: '#94a3b8',
-            borderWidth: 2,
-          },
-          label: { show: true, color: '#0f172a', fontSize: 12, fontWeight: 700 },
-        });
+      const targetTextWidth = Math.max(minTextWidth, Math.min(maxTextWidth, Math.ceil(naturalWidth)));
+      const lineHeight = Math.ceil(fontSize * 1.25);
+      let maxLineWidth = 0;
+      let lineCount = 0;
+      walkLineRanges(prepared, targetTextWidth, (line) => {
+        lineCount += 1;
+        maxLineWidth = Math.max(maxLineWidth, line.width);
       });
-      safeArray(view.edges).forEach((edge, index) => {
-        links.push({
-          id: `edge:${index}`,
+      if (lineCount === 0) lineCount = layout(prepared, targetTextWidth, lineHeight).lineCount;
+      const isDiamond = node.kind === "decision" || node.kind === "challenge";
+      const isEvidence = node.kind === "evidence";
+      const measuredTextWidth = Math.min(maxTextWidth, Math.max(minTextWidth, maxLineWidth || targetTextWidth));
+      const width = Math.ceil(measuredTextWidth + (isDiamond ? 96 : isEvidence ? 54 : 28));
+      const height = Math.max(isDiamond ? 94 : 72, Math.ceil(lineCount * lineHeight + (isDiamond ? 44 : 28)));
+      return {
+        width,
+        height,
+        textWidth: isDiamond ? Math.max(110, width - 96) : Math.max(110, width - 34),
+      };
+    }
+
+    function buildElements(view) {
+      const sourceMap = new Map((view.evidence || []).map((source) => [source.id, source]));
+      const nodes = (view.nodes || []).map((node) => {
+        const box = measureNodeBox(node);
+        return {
+          position: node.position,
+          data: {
+            id: node.id,
+            label: `${node.icon} ${node.label}`,
+            status: node.status,
+            kind: node.kind,
+            width: box.width,
+            height: box.height,
+            textWidth: box.textWidth,
+            why: node.why_it_matters,
+            evidence: (node.source_refs || []).map((id) => sourceMap.get(id)?.label).filter(Boolean).join(" · "),
+          },
+        };
+      });
+
+      const edges = (view.edges || []).map((edge, index) => ({
+        data: {
+          id: `e-${index}`,
           source: edge.from,
           target: edge.to,
-          value: edge.label,
-          lineStyle: {
-            color: '#b8c2d6',
-            width: 2,
-          },
-          label: {
-            show: Boolean(edge.label),
-            formatter: edge.label || '',
-            color: '#64748b',
-            fontSize: 10,
-            backgroundColor: '#ffffff',
-            padding: [2, 6],
-            borderRadius: 8,
-          },
-        });
-      });
-      safeArray(view.key_moments).forEach((moment) => {
-        if (!moment.actor_id) return;
-        safeArray(moment.node_refs).forEach((nodeRef) => {
-          links.push({
-            source: `person:${moment.actor_id}`,
-            target: nodeRef,
-            value: moment.icon || statusIcon(kindToStatus(moment.kind)),
-            lineStyle: {
-              color: '#cbd5e1',
-              width: 1.8,
-              type: 'dashed',
+          relation: edge.relation,
+          label: edge.label,
+        },
+      }));
+
+      return [...nodes, ...edges];
+    }
+
+    function syncGraphButtons() {
+      const panel = document.querySelector(".graph-panel");
+      const isFullscreen = document.fullscreenElement === panel;
+      document.getElementById("graph-fullscreen").hidden = isFullscreen;
+      document.getElementById("graph-close").hidden = !isFullscreen;
+    }
+
+    function initGraph(view) {
+      const cy = cytoscape({
+        container: document.getElementById("cy"),
+        elements: buildElements(view),
+        layout: { name: "preset", padding: 28, fit: true, animate: false },
+        style: [
+          {
+            selector: "node",
+            style: {
+              "shape": (ele) => kindShape[ele.data("kind")] || "round-rectangle",
+              "width": "data(width)",
+              "height": "data(height)",
+              "padding": "14px",
+              "background-color": "#ffffff",
+              "border-width": 1.6,
+              "border-color": "#a8b3c7",
+              "label": "data(label)",
+              "font-size": 14,
+              "font-weight": 700,
+              "font-family": "Virgil, Segoe UI Emoji, Segoe UI, sans-serif",
+              "text-wrap": "wrap",
+              "text-max-width": "data(textWidth)",
+              "text-valign": "center",
+              "text-halign": "center",
+              "color": "#0f172a",
             },
-          });
+          },
+          {
+            selector: "edge",
+            style: {
+              "curve-style": "bezier",
+              "width": 1.7,
+              "line-color": "#b8c2d6",
+              "target-arrow-color": "#b8c2d6",
+              "target-arrow-shape": "triangle",
+              "arrow-scale": 0.72,
+              "label": "data(label)",
+              "font-size": 10,
+              "font-family": "Virgil, Segoe UI Emoji, Segoe UI, sans-serif",
+              "text-background-color": "#ffffff",
+              "text-background-opacity": 0.78,
+              "text-background-padding": "3px",
+              "text-border-width": 0,
+              "text-rotation": "autorotate",
+              "color": "#7b8798",
+            },
+          },
+          { selector: 'node[kind = "decision"]', style: { "font-size": 15 } },
+          { selector: 'node[kind = "missing-question"]', style: { "border-style": "dashed" } },
+          { selector: "node:selected", style: { "overlay-opacity": 0, "border-width": 3 } },
+        ],
+      });
+
+      cy.on("tap", "node", (event) => {
+        const node = event.target;
+        console.log("[huddle] node", {
+          id: node.id(),
+          label: node.data("label"),
+          why: node.data("why"),
+          evidence: node.data("evidence"),
         });
       });
 
-      return { nodes, links };
-    }
-
-    let historyChart = null;
-    let historyRenderState = null;
-
-    function renderHistoryGraph(view) {
-      const graphEl = document.getElementById('history-graph');
-      if (!historyChart) {
-        historyChart = echarts.init(graphEl, null, { renderer: 'svg' });
-        window.addEventListener('resize', () => historyChart && historyChart.resize());
-      }
-      historyRenderState = { view };
-      const graph = buildHistoryGraph(view);
-      historyChart.setOption({
-        animationDurationUpdate: 500,
-        animationEasingUpdate: 'cubicOut',
-        tooltip: { trigger: 'item' },
-        series: [{
-          type: 'graph',
-          layout: 'force',
-          force: { repulsion: 260, edgeLength: 170, gravity: 0.08 },
-          roam: true,
-          draggable: false,
-          data: graph.nodes,
-          links: graph.links,
-          emphasis: {
-            focus: 'adjacency',
-            scale: true,
-          },
-          lineStyle: {
-            opacity: 0.7,
-            width: 2,
-            curveness: 0.08,
-          },
-          labelLayout: {
-            hideOverlap: true,
-          },
-        }],
-      }, true);
-      historyChart.resize();
-    }
-
-    function refreshHistoryGraphLayout() {
-      if (!historyChart || !historyRenderState) return;
-      requestAnimationFrame(() => {
-        historyChart.resize();
-        renderHistoryGraph(historyRenderState.view);
+      cyInstance = cy;
+      window.addEventListener("resize", () => cy.resize());
+      document.addEventListener("fullscreenchange", () => {
+        syncGraphButtons();
+        requestAnimationFrame(() => cy.resize());
       });
+    }
+
+    function initGraphActions() {
+      const panel = document.querySelector(".graph-panel");
+      document.getElementById("graph-fullscreen").addEventListener("click", async () => {
+        await panel.requestFullscreen();
+      });
+      document.getElementById("graph-close").addEventListener("click", async () => {
+        if (document.fullscreenElement) await document.exitFullscreen();
+      });
+      document.getElementById("graph-fit").addEventListener("click", () => {
+        if (!cyInstance) return;
+        cyInstance.fit(undefined, 40);
+        cyInstance.center();
+      });
+      document.getElementById("graph-export").addEventListener("click", () => {
+        if (!cyInstance) return;
+        const png = cyInstance.png({ full: true, scale: 2, bg: "#ffffff" });
+        const link = document.createElement("a");
+        link.href = png;
+        link.download = "huddle-graph.png";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      });
+      syncGraphButtons();
     }
 
     function setupTabs() {
-      const tabs = document.querySelectorAll('.tab');
-      const views = document.querySelectorAll('.view');
+      const tabs = document.querySelectorAll(".tab");
+      const views = document.querySelectorAll(".view");
       tabs.forEach((tab) => {
-        tab.addEventListener('click', () => {
-          tabs.forEach((item) => item.classList.remove('active'));
-          views.forEach((view) => view.classList.remove('active'));
-          tab.classList.add('active');
-          document.getElementById(tab.dataset.view).classList.add('active');
-          if (tab.dataset.view === 'history-view') {
-            setTimeout(refreshHistoryGraphLayout, 30);
+        tab.addEventListener("click", () => {
+          tabs.forEach((item) => item.classList.remove("active"));
+          views.forEach((view) => view.classList.remove("active"));
+          tab.classList.add("active");
+          document.getElementById(tab.dataset.view).classList.add("active");
+          if (tab.dataset.view === "graph-view" && cyInstance) {
+            requestAnimationFrame(() => cyInstance.resize());
           }
         });
       });
-    }
-
-    function renderParticipants(participants) {
-      const room = document.getElementById('room-people');
-      room.innerHTML = participants.map(participantHtml).join('');
-    }
-
-    function setupHistory(view) {
-      const moments = safeArray(view.key_moments).map((moment) => ({
-        ts: moment.ts || '',
-        status: moment.status || kindToStatus(moment.kind),
-        display_tag: `${moment.icon} ${titleCase(moment.kind || kindToStatus(moment.kind))}`.trim(),
-        display_class: moment.status || kindToStatus(moment.kind),
-        display_title: moment.title,
-        display_detail: moment.detail,
-        actor: safeArray(view.people_involved).find((person) => person.id === moment.actor_id) || null,
-      }));
-      const empty = document.getElementById('history-empty');
-      const content = document.getElementById('history-content');
-      const feed = document.getElementById('history-feed');
-      const range = document.getElementById('history-range');
-      const stepLabel = document.getElementById('history-step');
-      const playButton = document.getElementById('history-play');
-      const badge = document.getElementById('history-badge');
-
-      if (!moments.length) {
-        empty.style.display = 'block';
-        content.style.display = 'none';
-        return;
-      }
-
-      badge.textContent = `${moments.length} moves captured`;
-
-      let timer = null;
-      let playing = false;
-
-      function render(step) {
-        stepLabel.textContent = `Step ${step + 1} / ${moments.length}`;
-
-        feed.innerHTML = moments.map((event, index) => eventCardHtml(event, index === step)).join('');
-        Array.from(feed.children).forEach((card, index) => {
-          card.addEventListener('click', () => {
-            range.value = index;
-            stop();
-            render(index);
-          });
-        });
-
-        renderHistoryGraph(view);
-      }
-
-      function stop() {
-        if (timer) clearInterval(timer);
-        timer = null;
-        playing = false;
-        playButton.textContent = '▶ Play flow';
-      }
-
-      function play() {
-        if (playing) {
-          stop();
-          return;
-        }
-        playing = true;
-        playButton.textContent = '⏸ Pause';
-        let step = 0;
-        range.value = 0;
-        render(0);
-        timer = setInterval(() => {
-          step += 1;
-          if (step >= moments.length) {
-            stop();
-            range.value = moments.length - 1;
-            render(moments.length - 1);
-            return;
-          }
-          range.value = step;
-          render(step);
-        }, 1200);
-      }
-
-      range.max = Math.max(moments.length - 1, 0);
-      range.value = range.max;
-      range.addEventListener('input', (event) => {
-        stop();
-        render(Number(event.target.value));
-      });
-      playButton.addEventListener('click', play);
-
-      render(moments.length - 1);
-    }
-
-    function setupCurrent(view) {
-      const nodes = safeArray(view.nodes);
-      const edges = safeArray(view.edges);
-      const empty = document.getElementById('current-empty');
-      const content = document.getElementById('current-content');
-
-      if (!nodes.length) {
-        empty.style.display = 'block';
-        content.style.display = 'none';
-        return;
-      }
-
-      const grouped = {
-        agreed: nodes.filter((node) => node.status === 'agreed'),
-        active: nodes.filter((node) => node.status === 'active' || node.status === 'challenged'),
-        open: nodes.filter((node) => node.status === 'open'),
-        deferred: nodes.filter((node) => node.status === 'deferred'),
-      };
-
-      const summary = document.getElementById('current-summary');
-      const standout = safeArray(view.what_stands_out).slice(0, 4);
-      summary.innerHTML = standout.length
-        ? standout.map((item) => `<div class="summary-card"><span class="label">${escapeHtml(item.icon)}</span><span class="value" style="font-size:1rem;line-height:1.25;">${escapeHtml(item.text)}</span></div>`).join('')
-        : `
-            <div class="summary-card"><span class="label">Generated</span><span class="value">${escapeHtml(view.generated_at || '-')}</span></div>
-            <div class="summary-card"><span class="label">Agreed</span><span class="value">${grouped.agreed.length}</span></div>
-            <div class="summary-card"><span class="label">Open</span><span class="value">${grouped.open.length}</span></div>
-            <div class="summary-card"><span class="label">Deferred</span><span class="value">${grouped.deferred.length}</span></div>
-          `;
-
-      const board = document.getElementById('current-map');
-      board.innerHTML = `
-        <section class="state-column">
-          <h3>Agreed</h3>
-          ${grouped.agreed.length ? grouped.agreed.map(nodeCardHtml).join('') : '<div class="empty">No agreed items yet.</div>'}
-        </section>
-        <section class="state-column">
-          <h3>Active</h3>
-          ${grouped.active.length ? grouped.active.map(nodeCardHtml).join('') : '<div class="empty">No active threads right now.</div>'}
-        </section>
-        <section class="state-column">
-          <h3>Open</h3>
-          ${grouped.open.length ? grouped.open.map(nodeCardHtml).join('') : '<div class="empty">No open questions right now.</div>'}
-        </section>
-        <section class="state-column">
-          <h3>Deferred</h3>
-          ${grouped.deferred.length ? grouped.deferred.map(nodeCardHtml).join('') : '<div class="empty">No deferred items right now.</div>'}
-        </section>
-      `;
-
-      const connections = document.getElementById('current-connections');
-      connections.innerHTML = edges.length
-        ? `<div class="section-head"><div><h2>Connections in the room</h2><p>How the current state ties together.</p></div><span class="pill">${edges.length} links</span></div>${edges.map(connectorCardHtml).join('')}`
-        : '';
     }
 
     async function main() {
-      logStep('main:start');
-      const overlay = document.getElementById('loading-overlay');
-      const loadingMsg = document.getElementById('loading-msg');
-      const appRoot = document.getElementById('app-root');
+      const overlay = document.getElementById("loading-overlay");
+      const loadingMsg = document.getElementById("loading-msg");
+      const appRoot = document.getElementById("app-root");
       const hash = window.location.hash.slice(1);
-      logStep('main:hash-read', { hashLength: hash.length });
+      logStep("main:start", { hashLength: hash.length });
 
       if (!hash) {
-        loadingMsg.textContent = 'No huddle bundle in URL. Use the launcher script to open a file here.';
-        logStep('main:no-hash');
+        loadingMsg.textContent = "No huddle bundle in URL. Use the launcher script to open a graph view here.";
         return;
       }
 
       let bundle;
       try {
-        loadingMsg.textContent = 'Decompressing...';
-        bundle = normalizeGraphViewBundle(JSON.parse(decompress(hash)));
-        logStep('main:bundle-parsed', {
-          keys: Object.keys(bundle),
-          markdownLength: bundle.markdown ? bundle.markdown.length : 0,
-          people: bundle.graphView && Array.isArray(bundle.graphView.people_involved) ? bundle.graphView.people_involved.length : 0,
-          moments: bundle.graphView && Array.isArray(bundle.graphView.key_moments) ? bundle.graphView.key_moments.length : 0,
-          nodes: bundle.graphView && Array.isArray(bundle.graphView.nodes) ? bundle.graphView.nodes.length : 0,
-        });
-      } catch (error) {
-        loadingMsg.textContent = `Decode error: ${error.message}`;
-        console.error('[huddle] decode:error', error);
-        console.error(error);
-        return;
-      }
-
-      const { markdown, graphView, source } = bundle;
-      if (!markdown || !graphView) {
-        loadingMsg.textContent = 'Bundle missing required fields: markdown, view';
-        logStep('main:bundle-missing-fields');
-        return;
-      }
-
-      try {
-        logStep('main:validate-start');
-        validateGraphViewPayload(graphView);
-        logStep('main:validate-complete');
+        bundle = normalizeBundle(JSON.parse(decompress(hash)));
+        validateGraphViewPayload(bundle.graphView);
       } catch (error) {
         loadingMsg.textContent = error.message;
-        console.error('[huddle] validate:error', error);
-        console.error(error);
+        console.error("[huddle] fatal:error", error);
         return;
       }
 
-      loadingMsg.textContent = 'Rendering...';
-      logStep('main:render-start');
-      document.getElementById('hero-source').textContent = source || 'huddle.md';
-      document.getElementById('spec-content').innerHTML = marked.parse(markdown);
-      renderParticipants(graphView.people_involved || []);
-      renderEvidence(graphView.evidence || []);
-      setupTabs();
-      setupHistory(graphView);
-      setupCurrent(graphView);
-      logStep('main:render-complete');
+      await document.fonts.load("700 14px Virgil");
+      await document.fonts.load("700 15px Virgil");
+      await document.fonts.ready;
 
-      overlay.classList.add('hidden');
-      appRoot.style.display = 'block';
-      logStep('main:visible');
+      document.getElementById("hero-source").textContent = bundle.source || "huddle.md";
+      document.getElementById("spec-content").innerHTML = marked.parse(bundle.markdown || "");
+      renderSummary(bundle.graphView);
+      renderParticipants(bundle.graphView);
+      renderTimeline(bundle.graphView);
+      renderSources(bundle.graphView);
+      initGraph(bundle.graphView);
+      initGraphActions();
+      setupTabs();
+
+      overlay.classList.add("hidden");
+      appRoot.style.display = "block";
+      logStep("main:visible");
     }
 
     main().catch((error) => {
-      document.getElementById('loading-msg').textContent = `Error: ${error.message}`;
-      console.error('[huddle] fatal:error', error);
-      console.error(error);
+      document.getElementById("loading-msg").textContent = `Error: ${error.message}`;
+      console.error("[huddle] fatal:error", error);
     });
   </script>
 </body>
