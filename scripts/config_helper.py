@@ -1,19 +1,21 @@
 """
-Read and write per-repo config at ~/m-agentic-skills-config/{reponame}/config.json.
+Read and write per-repo config at ~/config/.m-agent-skills/{reponame}/config.json.
 
 Usage:
     python config_helper.py read   <reponame>
     python config_helper.py get    <reponame> <key>
     python config_helper.py set    <reponame> <key> <value>
+    python config_helper.py bootstrap <project_root> [repo_name] [branch] [user]
 """
 
+import getpass
 import json
 import pathlib
 import sys
 
 
 def config_path(reponame):
-    return pathlib.Path.home() / "m-agentic-skills-config" / reponame / "config.json"
+    return pathlib.Path.home() / "config" / ".m-agent-skills" / reponame / "config.json"
 
 
 def load(reponame):
@@ -57,13 +59,50 @@ def cmd_set(reponame, key, value):
     print(f"Config: {p}")
 
 
+def cmd_bootstrap(project_root, repo_name="", branch="", user=""):
+    root = pathlib.Path(project_root).expanduser().resolve()
+    resolved_repo_name = repo_name or root.name
+    resolved_branch = branch or "main"
+    resolved_user = user or getpass.getuser()
+
+    config = load(resolved_repo_name) or {}
+    config.update(
+        {
+            "reponame": resolved_repo_name,
+            "local_project_root": str(root),
+            "local_repo_name": resolved_repo_name,
+            "local_branch": resolved_branch,
+            "local_user": resolved_user,
+            "non_git_mode": True,
+        }
+    )
+    p = save(resolved_repo_name, config)
+    print(json.dumps({"config_file": str(p), "config": config}, indent=2))
+
+
 if __name__ == "__main__":
     args = sys.argv[1:]
-    if len(args) < 2:
+    if not args:
         print(__doc__)
         sys.exit(1)
 
     command = args[0]
+
+    if command == "bootstrap":
+        if len(args) < 2:
+            print("ERROR: bootstrap requires <project_root> [repo_name] [branch] [user]", file=sys.stderr)
+            sys.exit(1)
+        project_root = args[1]
+        repo_name = args[2] if len(args) >= 3 else ""
+        branch = args[3] if len(args) >= 4 else ""
+        user = args[4] if len(args) >= 5 else ""
+        cmd_bootstrap(project_root, repo_name, branch, user)
+        sys.exit(0)
+
+    if len(args) < 2:
+        print(__doc__)
+        sys.exit(1)
+
     reponame = args[1]
 
     if command == "read":

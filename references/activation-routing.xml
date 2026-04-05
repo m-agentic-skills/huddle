@@ -1,22 +1,147 @@
-<activation-routing skill="team-meeting" version="1.0">
+<activation-routing skill="huddle" version="3.0">
 
   <defaults>
-    <rule>Always initialize repo meeting memory first.</rule>
-    <rule>Always load and use persona markdown files.</rule>
-    <rule>Always update the daily meeting note and meeting-state.json.</rule>
+    <rule>Always run step-00-preflight first — repo identity is required.</rule>
+    <rule>Always run step-01-meeting-init before any routed behavior — get GIT_USER, load huddle memory, load repo work state, and load all persona files.</rule>
+    <rule>Use this file as the policy and mode router. Use the step files as execution details.</rule>
+    <rule>User drives — after presenting perspectives, summaries, notes, plans, or reviews, always stop and ask {GIT_USER} for their call or next direction.</rule>
+    <rule>Never advance to a new topic or record a decision without {GIT_USER} signalling to do so.</rule>
+    <rule>All decisions in the meeting record are attributed to {GIT_USER}, not to any persona.</rule>
+    <rule>Always update today's huddle note and huddle-state.json after each meaningful exchange.</rule>
+    <rule>Rotate persona participation — track who spoke recently and avoid always picking the same pair.</rule>
+    <rule>Keep the room small by default. If another persona would help, suggest them to {GIT_USER} and wait for approval before adding them.</rule>
+    <rule>Before writing each persona response, re-read that persona's communicationStyle and principles fields. Character consistency depends on this.</rule>
+    <rule>Elango is the source of truth for huddle memory, notes, summaries, specs, and current-state review.</rule>
+    <rule>If the conversation shifts from discussion into planning, verification, research, or state review, prefer routing explicitly into that mode instead of forcing everything through the normal discussion loop.</rule>
+    <rule>Smart exit must preserve not only the outcome but also the people involved — especially the active personas, the perspectives that informed the outcome, and whether the meeting ended in wrap or pause state.</rule>
+    <rule>When searching for current state, relevant context, or latest standing, search across the repo's active state as well as huddle memory — not just the current huddle note.</rule>
   </defaults>
+
+  <state-management>
+    <rule>Maintain an internal meeting mode for the current turn: discussion, planning, verification, research, spec-review, or wrap-up.</rule>
+    <rule>Discussion is the default mode when a topic is being explored or debated.</rule>
+    <rule>Planning mode is for turning a chosen direction into an implementation approach, sequence, or execution outline.</rule>
+    <rule>Verification mode is for checking whether something is actually complete, sound, tested, safe, or good enough to trust.</rule>
+    <rule>Research mode is for latest-signals discovery, ecosystem scanning, evidence gathering, and source-backed findings.</rule>
+    <rule>Spec-review mode is for Elango-led notes, summaries, specs, action items, and current-state review.</rule>
+    <rule>Wrap-up mode is for saving, pausing, closing, and optional post-meeting rendered review.</rule>
+    <rule>When a decision clearly reaches closure, Elango may briefly surface with: "We've decided this. Want to have a look?"</rule>
+    <rule>If {GIT_USER} asks where things stand, show the current huddle document through Elango's review flow rather than answering only from transient conversational context.</rule>
+    <rule>When entering wrap-up mode, carry forward the currently active personas and the perspectives that most directly informed the meeting state so resume has human context, not just raw conclusions.</rule>
+    <rule>Current-state review should consider repo work state, current branch huddle state, recent branch history, and relevant sibling-branch summaries together.</rule>
+  </state-management>
 
   <routes>
 
-    <route id="team-meeting">
-      <when>team meeting, daily meeting, sync up, project sync, repo discussion, multiple perspectives, resume meeting, continue meeting, standup, discussion with team</when>
-      <goal>Run or resume the repo's daily multi-persona team meeting and persist the state.</goal>
+    <route id="start-meeting" mode="discussion">
+      <when>team meeting, daily meeting, sync up, project sync, let's meet, start meeting, begin meeting, standup, morning sync, discuss this with the team, assemble the team, get the experts in, bring in the team, huddle, start a huddle, open a huddle, team huddle</when>
+      <goal>Start or resume today's repo huddle. Get GIT_USER by name, load all personas, surface current context, show roster, and ask what to discuss.</goal>
       <steps>
-        <step ref="steps/step-01-meeting-init.md">Load repo identity, meeting memory, and personas.</step>
-        <step ref="steps/step-02-discussion.md">Run the discussion and update meeting state.</step>
+        <step ref="steps/step-00-preflight.md">Verify gh CLI and GitHub remote.</step>
+        <step ref="steps/step-01-meeting-init.md">Get GIT_USER, load repo config, huddle memory, repo work state, and all persona files.</step>
+        <step ref="steps/step-02-discussion.md">Open the huddle and begin the user-driven discussion loop.</step>
+      </steps>
+    </route>
+
+    <route id="resume-meeting" mode="discussion">
+      <when>resume meeting, continue meeting, pick up where we left off, continue our discussion, resume where we stopped, what did we decide, continue the team meeting, resume huddle, continue huddle, resume the huddle</when>
+      <goal>Resume today's huddle from saved state. Summarize what was covered, surface open items, and ask {GIT_USER} where to continue.</goal>
+      <steps>
+        <step ref="steps/step-00-preflight.md">Verify gh CLI and GitHub remote.</step>
+        <step ref="steps/step-01-meeting-init.md">Load today's huddle note, huddle-state.json, repo work state, and persona files.</step>
+        <step ref="steps/step-02-discussion.md">Resume discussion from the current state.</step>
+      </steps>
+    </route>
+
+    <route id="discussion" mode="discussion">
+      <when>what do you think, help me think through this, discuss this, let's discuss, huddle up, war room, I need multiple perspectives, I'm stuck on this, what should we do about this</when>
+      <goal>Run a focused persona round on the current topic, surface the core tension, and return the decision to {GIT_USER}.</goal>
+      <steps>
+        <step ref="steps/step-02-discussion.md">Run the normal discussion loop.</step>
+      </steps>
+    </route>
+
+    <route id="research-mode" mode="research">
+      <when>latest happenings, what's happening right now, what's happening in the space, research this topic, trend research, latest on, what are people talking about, look into the ecosystem, gather sources, what's new in</when>
+      <goal>Route into source-backed research mode. Amara leads the latest-signals scan and the room reacts to evidence rather than vague commentary.</goal>
+      <steps>
+        <step ref="steps/step-02-discussion.md">Use Amara-led research behavior with supporting personas as needed.</step>
+      </steps>
+    </route>
+
+    <route id="planning-mode" mode="planning">
+      <when>make a plan, implementation plan, execution plan, what should the plan be, turn this into a plan, how should we implement this, architecture plan, break this down, sequence this work</when>
+      <goal>Switch from open discussion into planning. Produce a concrete, execution-ready plan from the room's chosen direction.</goal>
+      <steps>
+        <step ref="steps/step-02-discussion.md">Use planning-oriented discussion and Elango output when appropriate.</step>
+      </steps>
+    </route>
+
+    <route id="verification-mode" mode="verification">
+      <when>are we done, does this hold up, verify this, double check this, is this actually complete, does this really work, can we trust this, is this safe, validate this decision</when>
+      <goal>Switch into verification mode. Pressure-test claims, completeness, evidence, and confidence before treating the work as done.</goal>
+      <steps>
+        <step ref="steps/step-02-discussion.md">Use verification-oriented discussion and evidence-focused review behavior.</step>
+      </steps>
+    </route>
+
+    <route id="spec-output" mode="spec-review">
+      <when>create a spec, write the spec, give me the spec, turn this into a spec, capture this as a spec, summarize the meeting, give me the notes, action items, write up the notes</when>
+      <goal>Route to Elango's output mode. Produce notes, summary, spec, or action items from accumulated huddle memory.</goal>
+      <steps>
+        <step ref="steps/step-02-discussion.md">Invoke Elango's output-on-demand behavior.</step>
+      </steps>
+    </route>
+
+    <route id="status-review" mode="spec-review">
+      <when>where do we stand, show me the huddle, show me the meeting, open the notes, let me see the current document, show me current state, open the huddle notes, open the meeting notes, let me have a look, show the current notes</when>
+      <goal>Route to Elango's review flow. Build current state from repo work state plus huddle memory, then use the current huddle Markdown as the source of truth for the rendered review, render it to HTML, and open it in the browser.</goal>
+      <steps>
+        <step ref="steps/step-02-discussion.md">Run Elango's state-review behavior, render Markdown to HTML, and use the browser as the review surface.</step>
+      </steps>
+    </route>
+
+    <route id="completion-review" mode="spec-review">
+      <when>we decided this, show me what we decided, let me review the decision, want to have a look, show me the decision flow, show me the rationale</when>
+      <goal>After a clear decision reaches closure, let Elango surface the decision, rationale, and optional Mermaid flow for user review.</goal>
+      <steps>
+        <step ref="steps/step-02-discussion.md">Use Elango's decision check-in and review behavior.</step>
+      </steps>
+    </route>
+
+    <route id="wrap-up" mode="wrap-up">
+      <when>that's enough, let's stop, good for now, end meeting, wrap up, close the meeting, we're done, save and pause, let's pause here, stop here for today</when>
+      <goal>Summarize what was covered and decided by {GIT_USER}, capture which personas and perspectives shaped the outcome, persist state, treat pause as a first-class exit path, and optionally allow rendered review of the final huddle notes.</goal>
+      <steps>
+        <step ref="steps/step-03-smart-exit.md">Summarize, save decisions and action items, persist state, and support visual review when asked.</step>
+      </steps>
+    </route>
+
+    <route id="review-after-wrap" mode="wrap-up">
+      <when>show me the final notes, open the final summary, let me review before we close, open the wrap-up notes</when>
+      <goal>After or during wrap-up, let Elango render the current huddle Markdown to HTML and open it in the browser for a final review.</goal>
+      <steps>
+        <step ref="steps/step-03-smart-exit.md">Use the rendered HTML review flow on the current huddle note.</step>
       </steps>
     </route>
 
   </routes>
+
+  <disambiguation>
+    <rule>If {GIT_USER} asks "what do you think?" — route to discussion mode and give input from the most relevant personas, not a final decision.</rule>
+    <rule>If {GIT_USER} names a persona, always include that persona in the next relevant discussion round.</rule>
+    <rule>If the current discussion reveals a missing specialty, ask {GIT_USER} whether to pull that persona in rather than auto-expanding the panel.</rule>
+    <rule>If {GIT_USER} says "resume meeting" or "resume huddle" and no huddle note exists for today, treat it as a fresh start.</rule>
+    <rule>Wrap-up phrases mid-conversation trigger wrap-up mode, not skill termination.</rule>
+    <rule>If not in a git repo, fall back to local folder mode instead of stopping. Use the current folder name as repo identity unless config.json already provides a stored local identity.</rule>
+    <rule>If {GIT_USER} asks for latest information, route to research mode rather than normal discussion when freshness or sources are central.</rule>
+    <rule>If {GIT_USER} asks for a spec, notes, summary, or action items, route to Elango's spec-review mode rather than treating it as another persona round.</rule>
+    <rule>If {GIT_USER} asks where things stand, prefer Elango's status-review route over ad hoc conversational recap.</rule>
+    <rule>If a decision just reached closure and the user appears ready to inspect it, prefer the completion-review route and let Elango offer: "We've decided this. Want to have a look?"</rule>
+    <rule>If the user asks to inspect the huddle visually, use the current Markdown huddle note, render it with `python3 scripts/md_to_html.py file.md output.html`, and open the HTML in the browser.</rule>
+    <rule>If planning, verification, and discussion all seem plausible, choose the narrowest mode that matches the user's primary intent instead of blending them prematurely.</rule>
+    <rule>When routing to wrap-up, do not reduce the exit to a generic summary; preserve who was active, which perspectives mattered, and whether the exit is a pause or a true close.</rule>
+    <rule>For status or standing questions, do not search only the current huddle note; also inspect repo work state, current branch history, and relevant cross-branch summaries before answering.</rule>
+  </disambiguation>
 
 </activation-routing>

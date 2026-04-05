@@ -1,35 +1,32 @@
 ---
-name: team-meeting
-description: Repo-aware multi-persona team meeting for daily development discussions. Use when the user wants a team sync, daily meeting, multiple perspectives on repo work, to resume today's meeting, or to capture decisions and action items. Load personas from markdown files, orchestrate a party-mode style discussion in our style, and persist meeting state under ~/m-agentic-skills-config/{reponame}/team-meetings/.
+name: huddle
+description: >
+  Runs a repo-aware expert huddle for engineering decisions, planning, research, verification, and spec capture. Trigger this skill when the user says
+  anything like: "start a huddle", "open a huddle", "huddle up", "call a team meeting", "assemble the team", "get the experts in", "let's have a huddle",
+  "what does the team think", "I need multiple perspectives", "huddle up", "start a huddle", "open a huddle", "war room", "let's discuss this
+  as a team", "bring in the team", "team sync", "daily standup", "what should we do about X", "help me
+  think through this", "I'm stuck on X let's discuss", "resume the huddle", "continue our discussion",
+  "what did we decide", "get me a spec", "summarise the huddle", "what are the action items".
+  Also trigger when the user seems blocked, frustrated, or facing a decision with multiple tradeoffs —
+  even if they don't explicitly ask for a huddle.
 ---
 
-# Team Meeting
+# Huddle
 
-Use this skill as the repo's daily AI team room.
+Use this skill as the repo's decision huddle.
 
-This is party mode converted into a practical team meeting workflow:
+For any topic raised, Claude surfaces relevant perspectives from a team of specialists (Architecture, Engineering, Security, Product, Design, Testing, Test Architecture, Analysis, Documentation, Strategy, Prioritization, Validation, Vision, Presentation, Narrative, Data, Trend Scanning, Spec Creation) — short, opinionated, grounded in the repo — then stops and waits for the user to decide and move forward.
 
-- repo-aware
-- resumable by date
-- saves a meeting document every day
-- keeps open questions and action items in repo memory
-- uses multiple labeled personas without turning into theatrical roleplay
-
-## Read Order
-
-1. `steps/step-01-meeting-init.md`
-2. `steps/step-02-discussion.md`
-3. `steps/step-03-smart-exit.md`
+The user drives. Claude does not make decisions or advance the agenda unilaterally.
 
 ## Core Rules
 
-- Identify the repo with `gh repo view --json name,nameWithOwner`.
-- Store meeting memory in `~/m-agentic-skills-config/{reponame}/team-meetings/`.
-- Today's meeting file is `{YYYY-MM-DD}.md`.
-- Shared state file is `meeting-state.json`.
-- Always load today's meeting file if it exists and resume from it.
-- Always update the daily meeting file and state file after meaningful discussion.
-- Use the persona markdown files in `./personas/`.
-- Keep persona output short, opinionated, and useful. Label each contribution with the persona name.
-- Allow disagreement and cross-reference between personas.
-- When the user is clearly wrapping up, summarize, persist the state, and tell them how to resume.
+- Identify the user with `git config user.name`. Use their name throughout.
+- Identify the repo with `git remote get-url origin` (parse owner/repo from URL). Fallback: `basename $(git rev-parse --show-toplevel)`.
+- Store huddle memory in `~/config/.m-agent-skills/{reponame}/{branch}/huddle/`.
+- Today's huddle note is `{YYYY-MM-DD}.md`. Always resume if it exists.
+- After presenting perspectives, always stop and ask `{GIT_USER}` for their call or next direction.
+- Never advance to a new topic without the user signalling to move on.
+- Record every decision as made by the user, not by a perspective.
+
+Follow the instructions in `./references/workflow.md`.

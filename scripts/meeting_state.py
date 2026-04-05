@@ -1,8 +1,8 @@
 """
-Manage repo-scoped team meeting state under ~/m-agentic-skills-config/{reponame}/team-meetings/.
+Manage repo-scoped huddle state under ~/config/.m-agent-skills/{reponame}/{branch}/huddle/.
 
 Usage:
-    python meeting_state.py ensure <reponame> <date>
+    python meeting_state.py ensure <reponame> <branch> <date>
 """
 
 import json
@@ -11,32 +11,38 @@ import sys
 
 
 def repo_dir(reponame):
-    return pathlib.Path.home() / "m-agentic-skills-config" / reponame
+    return pathlib.Path.home() / "config" / ".m-agent-skills" / reponame
 
 
-def meetings_dir(reponame):
-    return repo_dir(reponame) / "team-meetings"
+def branch_dir(reponame, branch):
+    safe_branch = branch.replace("/", "-").lstrip(".") or "unknown-branch"
+    return repo_dir(reponame) / safe_branch
 
 
-def state_path(reponame):
-    return meetings_dir(reponame) / "meeting-state.json"
+def huddle_dir(reponame, branch):
+    return branch_dir(reponame, branch) / "huddle"
 
 
-def meeting_path(reponame, date_str):
-    return meetings_dir(reponame) / f"{date_str}.md"
+def huddle_state_path(reponame, branch):
+    return huddle_dir(reponame, branch) / "huddle-state.json"
 
 
-def ensure(reponame, date_str):
-    root = meetings_dir(reponame)
+def huddle_note_path(reponame, branch, date_str):
+    return huddle_dir(reponame, branch) / f"{date_str}.md"
+
+
+def ensure(reponame, branch, date_str):
+    root = huddle_dir(reponame, branch)
     root.mkdir(parents=True, exist_ok=True)
 
-    state = state_path(reponame)
-    if not state.exists():
-        state.write_text(
+    huddle_state = huddle_state_path(reponame, branch)
+    if not huddle_state.exists():
+        huddle_state.write_text(
             json.dumps(
                 {
                     "reponame": reponame,
-                    "last_meeting_date": date_str,
+                    "branch": branch,
+                    "last_huddle_date": date_str,
                     "current_topic": "",
                     "open_questions": [],
                     "action_items": [],
@@ -49,20 +55,21 @@ def ensure(reponame, date_str):
             encoding="utf-8",
         )
 
-    meeting = meeting_path(reponame, date_str)
-    if not meeting.exists():
-        meeting.write_text(
-            "# Team Meeting\n\n## Repo\n\n## Date\n\n## Participants\n\n## Topics Discussed\n\n## Decisions\n\n## Open Questions\n\n## Action Items\n\n## Latest Summary\n",
+    huddle_note = huddle_note_path(reponame, branch, date_str)
+    if not huddle_note.exists():
+        huddle_note.write_text(
+            "# Huddle\n\n## Repo\n\n## Date\n\n## Participants\n\n## Topics Discussed\n\n## Decisions\n\n## Open Questions\n\n## Action Items\n\n## Latest Summary\n",
             encoding="utf-8",
         )
 
     print(
         json.dumps(
-            {
-                "meetings_dir": str(root),
-                "state_file": str(state),
-                "meeting_file": str(meeting),
-            },
+                {
+                    "huddle_dir": str(root),
+                    "branch_dir": str(branch_dir(reponame, branch)),
+                    "huddle_state_file": str(huddle_state),
+                    "huddle_note_file": str(huddle_note),
+                },
             indent=2,
         )
     )
@@ -70,7 +77,7 @@ def ensure(reponame, date_str):
 
 if __name__ == "__main__":
     args = sys.argv[1:]
-    if len(args) != 3 or args[0] != "ensure":
+    if len(args) != 4 or args[0] != "ensure":
         print(__doc__)
         sys.exit(1)
-    ensure(args[1], args[2])
+    ensure(args[1], args[2], args[3])

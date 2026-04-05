@@ -1,22 +1,34 @@
 @echo off
 setlocal
 
-set REPO_DIR=%~dp0
-if "%REPO_DIR:~-1%"=="\" set REPO_DIR=%REPO_DIR:~0,-1%
-set UNINSTALLER=%REPO_DIR%\installscripts\uninstall.py
+set SKILL_NAME=huddle
+set HOME_DIR=%USERPROFILE%
 
-where py >nul 2>nul
-if not errorlevel 1 (
-  py -3 "%UNINSTALLER%" %*
-  exit /b %errorlevel%
+echo.
+echo Uninstalling %SKILL_NAME%...
+echo.
+
+call :remove_from ".claude\skills" "Claude Code"
+call :remove_from ".agents\skills" "Agent Skills"
+
+echo.
+echo Done.
+exit /b 0
+
+:remove_from
+set REL_DIR=%~1
+set LABEL=%~2
+set DEST=%HOME_DIR%\%REL_DIR%\%SKILL_NAME%
+
+if exist "%DEST%" (
+  fsutil reparsepoint query "%DEST%" >nul 2>nul
+  if not errorlevel 1 (
+    rmdir "%DEST%"
+    echo   Removed %LABEL% -^> %DEST%
+  ) else (
+    echo   %LABEL% -^> %DEST% is not a symlink, skipping
+  )
+) else (
+  echo   %LABEL% -^> not installed, skipping
 )
-
-where python >nul 2>nul
-if not errorlevel 1 (
-  python "%UNINSTALLER%" %*
-  exit /b %errorlevel%
-)
-
-echo Python is required to run the uninstaller.
-echo "Install Python and run this script again."
-exit /b 1
+exit /b 0
