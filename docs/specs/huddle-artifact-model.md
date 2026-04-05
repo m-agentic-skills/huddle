@@ -2,11 +2,11 @@
 
 ## Goal
 
-Define the 3 core artifacts Huddle should maintain for every session:
+Define the persisted artifacts Huddle should maintain for every session and the transient review projection derived from them:
 
 1. Markdown spec / notes
 2. Raw graph log
-3. Graph view
+3. Readable graph view on request
 
 This keeps Huddle readable for humans while also making the reasoning flow, participant influence, and evidence grounding explicit.
 
@@ -18,7 +18,7 @@ It should keep both:
 
 - Markdown for durable human-readable output
 - Raw graph log for structural discussion capture
-- Graph view for what a human should inspect
+- A readable graph view derived on request for what a human should inspect
 
 The visible product should feel like a huddle:
 
@@ -82,7 +82,7 @@ Characteristics:
 - source-aware through source refs
 - maintained by an internal background pass, not by visible persona chatter
 
-### 3. Graph View
+### 3. Readable Graph View
 
 Purpose:
 
@@ -98,10 +98,6 @@ Questions it should answer:
 - what evidence grounded the room
 - how branches, objections, and decisions connect
 
-Owner:
-
-- Elango
-
 Characteristics:
 
 - derived from the raw graph log
@@ -109,6 +105,7 @@ Characteristics:
 - participant-aware
 - evidence-aware
 - optimized for orientation, not raw replay
+- not persisted by default
 
 ## Suggested Storage
 
@@ -119,7 +116,6 @@ Store these under the branch huddle directory:
 ├── huddle-state.json
 ├── <YYYY-MM-DD>.md
 ├── graph-raw.json
-└── graph-view.json
 ```
 
 Meaning:
@@ -130,8 +126,8 @@ Meaning:
   - human-readable session artifact
 - `graph-raw.json`
   - append-oriented structural room changes
-- `graph-view.json`
-  - human-readable graph projection
+- transient readable graph view
+  - generated from the raw graph when the user asks for review
 
 ## Visible State Model
 
@@ -212,7 +208,7 @@ The HTML renderer should not invent presentation meaning on its own.
 
 Elango should write presentation-oriented state into the JSON artifacts, and the renderer should primarily display that state.
 
-### JSON Should Carry
+### Derived Graph Should Carry
 
 - participant icon, name, and short meta
 - event status
@@ -586,7 +582,7 @@ to:
 That means:
 
 - he maintains the raw graph
-- he produces graph-view.json as a human-readable projection
+- he derives a human-readable graph projection on demand
 - he produces Markdown as a projection of the graph-backed session state
 
 ## Product Framing
@@ -608,7 +604,7 @@ Execution can stay secondary or background-capable.
 Implement in this order:
 
 1. add `graph-raw.json`
-2. add `graph-view.json`
+2. derive a readable graph projection on request
 3. define Elango update rules in the skill
 4. render graph-review and standing views with icons and readable labels
 5. add zoomable graph map views

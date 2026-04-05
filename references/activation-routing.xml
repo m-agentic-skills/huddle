@@ -11,8 +11,9 @@
     <rule>Rotate persona participation — track who spoke recently and avoid always picking the same pair.</rule>
     <rule>Keep the room small by default. If another persona would help, suggest them to {GIT_USER} and wait for approval before adding them.</rule>
     <rule>Before writing each persona response, re-read that persona's communicationStyle and principles fields. Character consistency depends on this.</rule>
-    <rule>Elango is the underlying background state worker and the source of truth for huddle memory, notes, summaries, specs, history, and current-state review.</rule>
-    <rule>All presentation semantics for history and current-state review must be written by Elango into JSON artifacts. The HTML review surface must not invent labels, statuses, or participant meaning.</rule>
+    <rule>Elango is the underlying background state worker and the source of truth for huddle memory, notes, summaries, specs, and graph review.</rule>
+    <rule>Elango must append raw structural updates in the background after every meaningful round.</rule>
+    <rule>All presentation semantics for graph review must be derived by Elango from graph-raw.json at review time. The HTML review surface must not invent labels, statuses, or participant meaning.</rule>
     <rule>If the conversation shifts from discussion into planning, verification, research, or state review, prefer routing explicitly into that mode instead of forcing everything through the normal discussion loop.</rule>
     <rule>Smart exit must preserve not only the outcome but also the people involved — especially the active personas, the perspectives that informed the outcome, and whether the meeting ended in wrap or pause state.</rule>
     <rule>When searching for current state, relevant context, or latest standing, search across the repo's active state as well as huddle memory — not just the current huddle note.</rule>
@@ -28,6 +29,7 @@
     <rule>Wrap-up mode is for saving, pausing, closing, and optional post-meeting rendered review.</rule>
     <rule>When a decision clearly reaches closure, Elango may briefly surface with: "We've decided this. Want to have a look?"</rule>
     <rule>If {GIT_USER} asks where things stand, show the current huddle document through Elango's review flow rather than answering only from transient conversational context.</rule>
+    <rule>The readable graph is request-driven. Derive it only for explicit review, status checks, decision check-ins, or wrap-up review.</rule>
     <rule>When entering wrap-up mode, carry forward the currently active personas and the perspectives that most directly informed the meeting state so resume has human context, not just raw conclusions.</rule>
     <rule>Current-state review should consider repo work state, current branch huddle state, recent branch history, and relevant sibling-branch summaries together.</rule>
   </state-management>
@@ -96,7 +98,7 @@
 
     <route id="status-review" mode="spec-review">
       <when>where do we stand, show me the huddle, show me the meeting, open the notes, let me see the current document, show me current state, open the huddle notes, open the meeting notes, let me have a look, show the current notes</when>
-      <goal>Route to Elango's review flow. Build the latest room picture from repo work state plus huddle memory, then use graph-view.json and the current huddle Markdown together as the review basis, launch the review bundle, and open it in the browser.</goal>
+      <goal>Route to Elango's review flow. Build the latest room picture from repo work state plus huddle memory, derive a readable graph from graph-raw.json, then use that derived graph plus the current huddle Markdown as the review basis, launch the review bundle, and open it in the browser.</goal>
       <steps>
         <step ref="steps/step-02-discussion.md">Run Elango's state-review behavior, launch the review bundle, and use the browser as the review surface.</step>
       </steps>

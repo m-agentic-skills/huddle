@@ -527,6 +527,16 @@
       (data.edges || []).forEach((edge, index) => requireFields(edge, ["from", "to", "relation", "label"], `graph-view edges[${index}]`));
     }
 
+    function validateRawPayload(data) {
+      requireFields(data, ["session_id"], "graph-raw");
+      (data.actors || []).forEach((actor, index) => requireFields(actor, ["id", "name", "icon", "meta"], `graph-raw actors[${index}]`));
+      (data.sources || []).forEach((source, index) => requireFields(source, ["id", "kind", "label", "ref"], `graph-raw sources[${index}]`));
+      (data.events || []).forEach((event, index) => {
+        requireFields(event, ["ts", "actor_id", "op", "target", "payload"], `graph-raw events[${index}]`);
+        requireFields(event.target, ["id", "kind"], `graph-raw events[${index}].target`);
+      });
+    }
+
     function decodeUrlSafeBase64(input) {
       const normalized = input.replace(/-/g, "+").replace(/_/g, "/");
       const padding = normalized.length % 4 === 0 ? "" : "=".repeat(4 - (normalized.length % 4));
@@ -569,7 +579,145 @@
           graphView: bundle.view || bundle.graph_view,
         };
       }
-      throw new Error("Unsupported bundle shape. Expected `view` or `graph_view`.");
+      if (bundle.raw || bundle.graph_raw) {
+        const raw = bundle.raw || bundle.graph_raw;
+        validateRawPayload(raw);
+        return {
+          markdown: bundle.markdown || "",
+          source: bundle.source || "huddle.md",
+          graphView: deriveGraphViewFromRaw(raw),
+        };
+      }
+      throw new Error("Unsupported bundle shape. Expected `raw`, `graph_raw`, `view`, or `graph_view`.");
+    }
+
+    function statusFromEvent(event) {
+      return event.payload?.status || (
+        event.op === "decision_recorded" ? "agreed"
+        : event.op === "deferred" ? "deferred"
+        : event.op === "question_missing" ? "open"
+        : event.op === "rejected" ? "rejected"
+        : event.op === "challenged" ? "challenged"
+        : "active"
+      );
+    }
+
+    function iconFromStatus(status) {
+      return status === "agreed" ? "✅"
+        : status === "deferred" ? "⏸️"
+        : status === "open" ? "❓"
+        : status === "challenged" ? "⚔️"
+        : status === "rejected" ? "🛑"
+        : "💡";
+    }
+
+    function titleFromEvent(event) {
+      const payload = event.payload || {};
+      if ((event.op === "edge_added" || event.op === "edge_updated") && payload.from && payload.to) {
+        return payload.note || `${payload.relation || "linked"} ${payload.from} → ${payload.to}`;
+      }
+      return payload.label || payload.title || payload.note || event.note || event.target?.id || event.op;
+    }
+
+    function detailFromEvent(event) {
+      const payload = event.payload || {};
+      if ((event.op === "edge_added" || event.op === "edge_updated") && payload.from && payload.to) {
+        return payload.note || `${payload.from} ${payload.relation || "linked to"} ${payload.to}`;
+      }
+      return payload.note || payload.why_it_matters || event.note || `${event.op} on ${event.target?.kind || "node"}`;
+    }
+
+    function deriveGraphViewFromRaw(raw) {
+      const actors = raw.actors || [];
+      const sources = raw.sources || [];
+      const events = raw.events || [];
+      const actorMap = new Map(actors.map((actor) => [actor.id, actor]));
+
+      const actorEventCounts = new Map();
+      const nodeMap = new Map();
+      const edgeMap = new Map();
+
+      events.forEach((event) => {
+        const status = statusFromEvent(event);
+        const payload = event.payload || {};
+        const target = event.target || {};
+        actorEventCounts.set(event.actor_id, (actorEventCounts.get(event.actor_id) || 0) + 1);
+
+        if (target.id) {
+          const existing = nodeMap.get(target.id) || {
+            id: target.id,
+            kind: target.kind || "idea",
+            label: target.id,
+            status: "active",
+            icon: "💡",
+            why_it_matters: "",
+            source_refs: [],
+          };
+          existing.kind = target.kind || existing.kind;
+          existing.label = payload.label || payload.title || existing.label;
+          existing.status = payload.status || status || existing.status;
+          existing.icon = payload.icon || iconFromStatus(existing.status);
+          existing.why_it_matters = payload.why_it_matters || payload.note || event.note || existing.why_it_matters || "Captured from the huddle flow.";
+          existing.source_refs = Array.from(new Set([...(existing.source_refs || []), ...(payload.source_refs || [])]));
+          nodeMap.set(target.id, existing);
+        }
+
+        const from = payload.from;
+        const to = payload.to;
+        if (from && to) {
+          const edgeId = `${from}::${to}::${payload.relation || event.op}`;
+          edgeMap.set(edgeId, {
+            from,
+            to,
+            relation: payload.relation || event.op,
+            label: payload.label || payload.relation || event.op,
+            source_refs: payload.source_refs || [],
+          });
+        }
+      });
+
+      const nodes = Array.from(nodeMap.values());
+      const edges = Array.from(edgeMap.values());
+      const firstQuestion = nodes.find((node) => ["problem", "question", "issue", "missing-question"].includes(node.kind)) || nodes[0];
+      const decisionNode = [...nodes].reverse().find((node) => node.kind === "decision" || node.status === "agreed");
+      const notableEvents = events.filter((event) => event.op !== "edge_added" || event.payload?.note).slice(-3);
+
+      return {
+        session_id: raw.session_id,
+        generated_at: new Date().toISOString(),
+        main_question: firstQuestion?.label || "Huddle discussion",
+        decision: decisionNode?.label || "No final decision recorded yet",
+        decision_why: decisionNode?.why_it_matters || "Derived on demand from raw huddle events.",
+        what_stands_out: notableEvents.map((event) => ({
+          icon: iconFromStatus(statusFromEvent(event)),
+          text: titleFromEvent(event),
+        })),
+        people_involved: actors.map((actor) => ({
+          id: actor.id,
+          name: actor.name,
+          icon: actor.icon,
+          meta: actor.meta,
+          influence: actor.influence || `Shaped ${actorEventCounts.get(actor.id) || 0} recorded changes in this huddle.`,
+        })),
+        key_moments: events.map((event, index) => ({
+          id: event.id || `m-${index}`,
+          icon: iconFromStatus(statusFromEvent(event)),
+          title: titleFromEvent(event),
+          detail: detailFromEvent(event),
+          ts: event.ts,
+          actor_id: event.actor_id,
+        })),
+        evidence: sources.map((source) => ({
+          id: source.id,
+          icon: source.icon || (source.kind === "github" || source.kind === "web" ? "🔗" : source.kind === "repo" ? "🧩" : source.kind === "local" ? "📚" : "🗣️"),
+          label: source.label,
+          kind: source.kind,
+          ref: source.ref,
+          note: source.note || "Attached from raw huddle evidence.",
+        })),
+        nodes,
+        edges,
+      };
     }
 
     function renderSummary(view) {
@@ -657,7 +805,6 @@
       const nodes = (view.nodes || []).map((node) => {
         const box = measureNodeBox(node);
         return {
-          position: node.position,
           data: {
             id: node.id,
             label: `${node.icon} ${node.label}`,
@@ -681,6 +828,66 @@
           label: edge.label,
         },
       }));
+
+      const incoming = new Map(nodes.map((node) => [node.data.id, 0]));
+      const outgoing = new Map(nodes.map((node) => [node.data.id, []]));
+      edges.forEach((edge) => {
+        incoming.set(edge.data.target, (incoming.get(edge.data.target) || 0) + 1);
+        outgoing.set(edge.data.source, [...(outgoing.get(edge.data.source) || []), edge.data.target]);
+      });
+
+      const kindRank = {
+        evidence: 0,
+        issue: 1,
+        idea: 1,
+        option: 1,
+        challenge: 1,
+        decision: 2,
+        "missing-question": 3,
+        deferred: 3,
+        rejected: 3,
+        unresolved: 3,
+      };
+
+      const nodeById = new Map(nodes.map((node) => [node.data.id, node]));
+      const rank = new Map(nodes.map((node) => [node.data.id, kindRank[node.data.kind] ?? 1]));
+      const queue = nodes.filter((node) => (incoming.get(node.data.id) || 0) === 0).map((node) => node.data.id);
+      const seen = new Set(queue);
+
+      while (queue.length) {
+        const current = queue.shift();
+        const currentRank = rank.get(current) || 0;
+        for (const next of outgoing.get(current) || []) {
+          rank.set(next, Math.max(rank.get(next) || 0, currentRank + 1));
+          if (!seen.has(next)) {
+            seen.add(next);
+            queue.push(next);
+          }
+        }
+      }
+
+      const columns = new Map();
+      nodes.forEach((node) => {
+        const column = rank.get(node.data.id) || 0;
+        columns.set(column, [...(columns.get(column) || []), node]);
+      });
+
+      const sortedColumns = [...columns.keys()].sort((a, b) => a - b);
+      let x = 180;
+      sortedColumns.forEach((columnKey) => {
+        const columnNodes = columns.get(columnKey) || [];
+        let y = 140;
+        let maxWidth = 0;
+        columnNodes.forEach((node) => {
+          node.position = {
+            x: x + node.data.width / 2,
+            y: y + node.data.height / 2,
+          };
+          y += node.data.height + 120;
+          maxWidth = Math.max(maxWidth, node.data.width);
+        });
+        x += maxWidth + 180;
+      });
 
       return [...nodes, ...edges];
     }

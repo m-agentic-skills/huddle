@@ -22,6 +22,8 @@ Use natural wrap-up detection. Do not require explicit keywords.
 
   <elango-rules>
     <rule>Elango owns the final note state and visual review flow.</rule>
+    <rule>Elango must append the final raw structural changes for the session before exit completes.</rule>
+    <rule>Do not generate or refresh the readable graph projection during wrap-up unless {GIT_USER} asks for review or accepts a review prompt.</rule>
     <rule>If the user wants to inspect the final notes, use the current Markdown file, launch md_to_html.py, and open the review URL in the browser.</rule>
     <rule>Exit should leave enough context that a future resume can understand both the conclusions and who shaped them.</rule>
   </elango-rules>
@@ -51,7 +53,7 @@ Do not trigger if the phrase is incidental inside a larger question.
 4. List action items
 5. If the user paused rather than fully ended, say so explicitly: "Paused here."
 6. Persist all of it to today's huddle note and `huddle-state.json`
-7. If `{GIT_USER}` wants to inspect the final notes visually, launch:
+7. If `{GIT_USER}` wants to inspect the final notes visually, first derive the readable graph from `graph-raw.json`, then launch:
    `python3 scripts/md_to_html.py file.md`
    and open the review URL in the browser
 8. Tell `{GIT_USER}` they can resume by starting `huddle` again in this repo

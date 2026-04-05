@@ -25,16 +25,19 @@ This step runs as a loop — once per message from `{GIT_USER}`.
   <elango-rules>
     <rule>Elango runs as a mandatory background state worker after each meaningful round.</rule>
     <rule>Elango silently tracks decisions, rationale, rejected paths, action items, links between topics, raw graph changes, and source/evidence references.</rule>
-    <rule>Elango must keep graph-raw.json structural and derive graph-view.json for human review. The HTML renderer should only display those view fields, not invent them.</rule>
+    <rule>Elango must append structural updates to graph-raw.json after every meaningful round, even when no visible review is requested.</rule>
+    <rule>Elango must keep graph-raw.json structural and derive a readable graph view only for human review. The HTML renderer should only display that derived view, not invent it.</rule>
     <rule>If a decision reaches closure, Elango may briefly offer review: "We've decided this. Want to have a look?"</rule>
     <rule>If {GIT_USER} asks where things stand, search across repo work state, current branch memory, and relevant sibling-branch summaries before rendering the current huddle Markdown to HTML and opening it in the browser.</rule>
     <rule>When producing notes, summary, spec, or graph views, Elango may include Mermaid decision flow when it adds signal.</rule>
     <rule>Elango's background pass should be internally structured with clear tagged sections such as discussion delta, raw graph update, graph-view projection, and Markdown projection.</rule>
+    <rule>Do not regenerate the readable graph view on ordinary turns; do it only for status review, explicit graph review, decision check-in, or wrap-up review.</rule>
   </elango-rules>
 
   <state-rules>
     <rule>Update today's huddle note and huddle-state.json after each meaningful exchange.</rule>
-    <rule>Also update graph-raw.json after each meaningful exchange and refresh graph-view.json when a checkpoint or review is needed.</rule>
+    <rule>Also update graph-raw.json after each meaningful exchange.</rule>
+    <rule>Refresh the readable graph view only when a checkpoint or review is needed.</rule>
     <rule>Carry forward active_personas, latest_summary, open_questions, action_items, and current_topic.</rule>
     <rule>When a decision is recorded, preserve which perspectives informed it.</rule>
   </state-rules>
@@ -64,7 +67,7 @@ Perspectives available:
 | 🎤 | Sofia (Presentation Specialist) | Deck flow, audience adaptation, executive briefing, live delivery |
 | 📚 | Kishore (Storyteller) | Narrative arc, framing, hooks, memorable synthesis |
 | 🫧 | Amara (Trend Researcher) | Latest happenings, source-backed trend research, ecosystem signals |
-| 📐 | Elango (Spec Architect) | **Silent** — background state worker, maintains Markdown + raw graph + graph view |
+| 📐 | Elango (Spec Architect) | **Silent** — background state worker, maintains Markdown + raw graph and derives graph review on demand |
 
 ## Step 1: Analyze the Topic
 
@@ -247,11 +250,19 @@ Required JSON semantics:
 - `graph-raw.json` events must include `ts`, `actor_id`, `op`, `target`, and `payload`
 - `graph-raw.json` actors must include `id`, `name`, `icon`, and `meta`
 - `graph-raw.json` sources must include `id`, `kind`, `label`, and `ref`
-- `graph-view.json` people_involved must include `id`, `name`, `icon`, `meta`, and `influence`
-- `graph-view.json` nodes must include `id`, `kind`, `label`, `status`, `icon`, and `why_it_matters`
-- `graph-view.json` edges must include `from`, `to`, `relation`, and `label`
+- the derived readable graph must include `people_involved` with `id`, `name`, `icon`, `meta`, and `influence`
+- the derived readable graph must include `nodes` with `id`, `kind`, `label`, `status`, `icon`, and `why_it_matters`
+- the derived readable graph must include `edges` with `from`, `to`, `relation`, and `label`
 
 This tracking is invisible to `{GIT_USER}` — no output, no interruptions.
+
+Raw append behavior is always-on.
+
+Graph-view projection is request-driven:
+- status / "where do we stand?"
+- "show me the graph" / "open the huddle" / visual review
+- decision check-in after closure
+- wrap-up review when asked
 
 Run the internal pass in a structured way. Prefer sections like:
 
@@ -279,8 +290,8 @@ When `{GIT_USER}` asks for notes, a spec, a summary, action items, or graph revi
 2. Formats based on what was asked (see `saman-specwriter.md` for output modes)
 3. Include context, rationale, and decision flow when they help a future reader understand how the discussion evolved
 4. If the discussion had meaningful branching, dependencies, or tradeoffs, Elango may include a Mermaid decision graph
-5. If the user asks where things stand, Elango should present the graph view plus a readable summary
-6. If the user asks how the discussion evolved, Elango should present the graph view with key moments, evidence, and connected branches
+5. If the user asks where things stand, Elango should derive the readable graph plus a readable summary
+6. If the user asks how the discussion evolved, Elango should derive the readable graph with key moments, evidence, and connected branches
 7. If user asks for a spec, Elango synthesizes all accumulated notes into the structured spec format
 8. If gaps exist (e.g., no NFR discussion happened), Elango flags them: "Note: the meeting didn't cover X"
 9. Prefer `flowchart TD` Mermaid for decision graphs unless another Mermaid shape is clearly better

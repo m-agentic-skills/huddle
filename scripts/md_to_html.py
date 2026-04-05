@@ -6,8 +6,8 @@ Usage:
 
 Behavior:
     - Reads the markdown file.
-    - Reads `graph-view.json` next to it.
-    - Validates that Elango-owned view fields exist.
+    - Reads `graph-raw.json` next to it.
+    - Validates that Elango-owned raw fields exist.
     - Bundles both into one gzip+base64 URL hash.
     - Opens the static review page, which renders the bundle client-side.
 """
@@ -36,34 +36,29 @@ def require_fields(obj: dict, fields: list[str], context: str) -> None:
         raise ValueError(f"{context} missing required fields: {', '.join(missing)}")
 
 
-def validate_view_payload(data: dict) -> None:
-    require_fields(data, ["main_question", "decision", "decision_why"], "graph-view.json")
-    for index, item in enumerate(data.get("what_stands_out", [])):
-        require_fields(item, ["icon", "text"], f"graph-view.json what_stands_out[{index}]")
-    for index, person in enumerate(data.get("people_involved", [])):
-        require_fields(person, ["id", "name", "icon", "meta", "influence"], f"graph-view.json people_involved[{index}]")
-    for index, item in enumerate(data.get("key_moments", [])):
-        require_fields(item, ["id", "icon", "title", "detail"], f"graph-view.json key_moments[{index}]")
-    for index, item in enumerate(data.get("evidence", [])):
-        require_fields(item, ["id", "icon", "label", "kind", "ref", "note"], f"graph-view.json evidence[{index}]")
-    for index, node in enumerate(data.get("nodes", [])):
-        require_fields(node, ["id", "kind", "label", "status", "icon", "why_it_matters"], f"graph-view.json nodes[{index}]")
-    for index, edge in enumerate(data.get("edges", [])):
-        require_fields(edge, ["from", "to", "relation", "label"], f"graph-view.json edges[{index}]")
+def validate_raw_payload(data: dict) -> None:
+    require_fields(data, ["session_id"], "graph-raw.json")
+    for index, actor in enumerate(data.get("actors", [])):
+        require_fields(actor, ["id", "name", "icon", "meta"], f"graph-raw.json actors[{index}]")
+    for index, source in enumerate(data.get("sources", [])):
+        require_fields(source, ["id", "kind", "label", "ref"], f"graph-raw.json sources[{index}]")
+    for index, event in enumerate(data.get("events", [])):
+        require_fields(event, ["ts", "actor_id", "op", "target", "payload"], f"graph-raw.json events[{index}]")
+        require_fields(event["target"], ["id", "kind"], f"graph-raw.json events[{index}].target")
 
 
 def build_bundle(md_path: Path) -> dict:
-    view_path = md_path.with_name("graph-view.json")
+    raw_path = md_path.with_name("graph-raw.json")
 
     markdown = md_path.read_text(encoding="utf-8")
-    view = read_json(view_path)
+    raw = read_json(raw_path)
 
-    validate_view_payload(view)
+    validate_raw_payload(raw)
 
     return {
         "source": md_path.name,
         "markdown": markdown,
-        "view": view,
+        "raw": raw,
     }
 
 

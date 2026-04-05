@@ -22,8 +22,7 @@ Run a repo-scoped, daily, resumable discussion with multi-perspective analysis a
     └── huddle/
         ├── huddle-state.json            ← open questions, action items, last topic
         └── {YYYY-MM-DD}.md              ← daily huddle note
-        ├── graph-raw.json               ← append-oriented structural room changes
-        └── graph-view.json              ← human-readable graph projection
+        ├── graph-raw.json               ← append-oriented structural room changes, always updated in background
 ```
 
 Branch name is sanitised for the filesystem (e.g. `feature/login` → `feature-login`).
@@ -44,3 +43,8 @@ Cross-branch reads: when loading context, scan **all** sibling branch folders un
 3. Read `references/steps/step-01-meeting-init.md` — get git username, load repo config, and huddle memory.
 4. Read `references/steps/step-02-discussion.md` — run multi-perspective discussion loop, user drives.
 5. When user wraps up, read `references/steps/step-03-smart-exit.md` — summarize, persist, give resume hint.
+
+Graph review behavior:
+- persist only `graph-raw.json`
+- derive the readable graph transiently when review is requested
+- bundle markdown plus raw graph into the hosted review viewer

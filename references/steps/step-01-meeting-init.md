@@ -68,7 +68,7 @@ Creates missing directories (including `{HUDDLE_DIR}`), `huddle-state.json`, and
 
 This initialization should also ensure:
 - `graph-raw.json`
-- `graph-view.json`
+- transient graph review derived from `graph-raw.json` when needed
 
 ## 5. Gather Session Context (Highest Priority)
 

@@ -2,7 +2,7 @@
 
 ## Goal
 
-Define how Elango captures raw huddle movement during discussion and how a later LLM pass converts that raw structure into the human-readable graph view used by the review surface.
+Define how Elango captures raw huddle movement during discussion and how a later projection pass converts that raw structure into the human-readable graph view used by the review surface.
 
 The contract should support:
 
@@ -21,8 +21,8 @@ He should **not** write polished UI-ready semantics on every turn.
 Instead:
 
 - Elango writes `graph-raw.json`
-- a projection pass turns `graph-raw.json` into `graph-view.json`
-- the renderer consumes only `graph-view.json`
+- a projection pass turns `graph-raw.json` into a transient readable graph view
+- the renderer consumes only that transient readable graph view
 
 ## Artifact Set
 
@@ -30,7 +30,6 @@ Instead:
 <user-home>/config/.m-agent-skills/<repo>/<branch>/huddle/
 ├── <YYYY-MM-DD>.md
 ├── graph-raw.json
-└── graph-view.json
 ```
 
 Meaning:
@@ -39,7 +38,7 @@ Meaning:
   - readable spec / notes / summary
 - `graph-raw.json`
   - append-oriented structural event log
-- `graph-view.json`
+- transient graph view
   - human-readable projection used by the UI
 
 ## Design Principles
@@ -57,7 +56,7 @@ It should be:
 
 ### View Later
 
-`graph-view.json` is a derived artifact.
+The readable graph view is a derived artifact.
 
 It should be generated:
 
@@ -77,7 +76,7 @@ It should optimize for:
 
 The renderer should:
 
-- read `graph-view.json`
+- read the transient readable graph view
 - display it
 - avoid inventing business meaning
 
@@ -93,9 +92,9 @@ When a user opens the graph, they should quickly understand:
 - what evidence grounded the room
 - how branches, objections, and decisions connect
 
-## `graph-view.json`
+## Readable Graph View
 
-This is the final human-facing artifact.
+This is the final human-facing artifact at review time.
 
 ### Top-Level Shape
 
@@ -434,6 +433,6 @@ The projection pass should **not**:
 
 ## Recommendation
 
-Treat `graph-view.json` as the renderer contract.
+Treat the transient readable graph view as the renderer contract.
 
 Treat `graph-raw.json` as the durable capture Elango updates every round.

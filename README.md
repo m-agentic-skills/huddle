@@ -34,6 +34,7 @@ Huddle stores state under the user's config area:
     └── huddle/
         ├── huddle-state.json
         └── <YYYY-MM-DD>.md
+        └── graph-raw.json
 ```
 
 That split is intentional:
@@ -41,6 +42,8 @@ That split is intentional:
 - `config.json` is repo-scoped
 - `<branch>/` is reserved for branch-scoped state
 - `huddle/` contains only huddle artifacts
+- `graph-raw.json` is the only persisted graph source of truth
+- readable graph review is derived on request and opened in the hosted viewer
 
 ## Non-Git Projects
 
@@ -69,7 +72,8 @@ python3 scripts/config_helper.py bootstrap <project_root> [repo_name] [branch] [
 - [`scripts/meeting_state.py`](./scripts/meeting_state.py): huddle note/state creation
 - [`scripts/repo_context.py`](./scripts/repo_context.py): tolerant startup context gathering
 - [`scripts/config_helper.py`](./scripts/config_helper.py): repo config and local bootstrap support
-- [`scripts/md_to_html.py`](./scripts/md_to_html.py): bundle huddle artifacts and open the hosted browser review surface
+- [`scripts/md_to_html.py`](./scripts/md_to_html.py): bundle markdown plus raw graph and open the hosted browser review surface
+- [`e2e/run.py`](./e2e/run.py): smoke-test the raw state scripts and hosted review bundle flow
 
 ## Inspiration
 
