@@ -5,10 +5,10 @@
 Define the 3 core artifacts Huddle should maintain for every session:
 
 1. Markdown spec / notes
-2. History graph
-3. Current-state graph
+2. Raw graph log
+3. Graph view
 
-This keeps Huddle readable for humans while also making the reasoning flow, participant influence, and latest state explicit.
+This keeps Huddle readable for humans while also making the reasoning flow, participant influence, and evidence grounding explicit.
 
 ## Decision
 
@@ -17,8 +17,8 @@ Huddle should not choose between Markdown and graph.
 It should keep both:
 
 - Markdown for durable human-readable output
-- History graph for how the discussion evolved
-- Current-state graph for where the room stands now
+- Raw graph log for structural discussion capture
+- Graph view for what a human should inspect
 
 The visible product should feel like a huddle:
 
@@ -55,21 +55,20 @@ Characteristics:
 - export-friendly
 - not the only source of truth
 
-### 2. History Graph
+### 2. Raw Graph Log
 
 Purpose:
 
-- show how the discussion evolved over time
-- show branches, objections, reversals, rejected paths, refinements, and joins
-- preserve reasoning flow, not just final output
+- preserve discussion structure over time
+- capture branches, objections, reversals, rejected paths, refinements, joins, and evidence attachments
+- stay stable even if the renderer or review surface changes
 
 Questions it should answer:
 
-- how did we get here?
-- which options were considered?
-- what arguments shifted the room?
-- what got rejected?
-- where did disagreement or refinement happen?
+- what structurally changed in the room?
+- who added or challenged what?
+- what evidence got attached?
+- what branch was opened, deferred, or rejected?
 
 Owner:
 
@@ -78,28 +77,26 @@ Owner:
 Characteristics:
 
 - append-oriented
-- timeline-aware
-- supports animation and step-by-step replay
-- participant-aware
+- structural
+- participant-aware through actor ids
+- source-aware through source refs
 - maintained by an internal background pass, not by visible persona chatter
 
-### 3. Current-State Graph
+### 3. Graph View
 
 Purpose:
 
-- show the latest working understanding
-- show what is currently true, chosen, open, and actionable
+- show the latest human-readable room picture
+- show what stands out, who mattered, which moments changed the room, what evidence grounded it, and how the main branches connect
 
 Questions it should answer:
 
-- where do we stand now?
-- who most recently shaped the room?
-- what problem are we solving?
-- which context is active?
-- what options remain live?
-- what decision has been made?
-- what is still open?
-- what should happen next?
+- what the room was trying to solve
+- who shaped the discussion
+- what stood out immediately
+- which moments changed the room
+- what evidence grounded the room
+- how branches, objections, and decisions connect
 
 Owner:
 
@@ -107,11 +104,11 @@ Owner:
 
 Characteristics:
 
-- reduced latest state
-- clean snapshot
-- participant-aware summary of the latest room state
-- optimized for orientation, not replay
-- maintained separately from history so the latest state stays legible
+- derived from the raw graph log
+- human-readable
+- participant-aware
+- evidence-aware
+- optimized for orientation, not raw replay
 
 ## Suggested Storage
 
@@ -121,8 +118,8 @@ Store these under the branch huddle directory:
 <user-home>/config/.m-agent-skills/<repo>/<branch>/huddle/
 ├── huddle-state.json
 ├── <YYYY-MM-DD>.md
-├── graph-history.json
-└── graph-current.json
+├── graph-raw.json
+└── graph-view.json
 ```
 
 Meaning:
@@ -131,10 +128,10 @@ Meaning:
   - lightweight session state for routing/resume
 - `<YYYY-MM-DD>.md`
   - human-readable session artifact
-- `graph-history.json`
-  - evolution of reasoning over time
-- `graph-current.json`
-  - latest materialized state
+- `graph-raw.json`
+  - append-oriented structural room changes
+- `graph-view.json`
+  - human-readable graph projection
 
 ## Visible State Model
 
@@ -294,7 +291,7 @@ Optional later:
 
 The graph is not only a technical structure. It is the underlying representation of the huddle.
 
-### History Graph Should Represent
+### Raw Graph Should Represent
 
 - who introduced a thread
 - when a branch opened
@@ -303,7 +300,7 @@ The graph is not only a technical structure. It is the underlying representation
 - when the room converged
 - when something was deferred instead of decided
 
-### Current-State Graph Should Represent
+### Graph View Should Represent
 
 - what is currently active
 - what has been agreed
@@ -323,85 +320,69 @@ The graph is not only a technical structure. It is the underlying representation
 
 Markdown is a projection of the graph, not the source of truth.
 
-## Current-State Graph Shape
+## Graph View Shape
 
-This should represent the latest resolved working picture.
+This should represent the latest human-readable room picture.
 
 Example:
 
 ```json
 {
   "session_id": "2026-04-05-main",
-  "updated_at": "2026-04-05T12:00:00Z",
-  "participants": [
-    { "id": "user", "name": "Muthu", "icon": "🎼", "role": "user" },
-    { "id": "suren", "name": "Suren", "icon": "🏛️", "role": "architect" },
-    { "id": "elango", "name": "Elango", "icon": "📐", "role": "background-state-worker" }
+  "generated_at": "2026-04-05T12:00:00Z",
+  "main_question": "How should Huddle show reasoning flow?",
+  "decision": "Keep raw graph capture and derive the readable graph later.",
+  "decision_why": "The room wanted stable capture and clearer inspection.",
+  "what_stands_out": [
+    { "icon": "✅", "text": "Raw-first capture, view-later projection." }
+  ],
+  "people_involved": [
+    { "id": "user", "name": "Muthu", "icon": "🎼", "meta": "You", "influence": "Directed the product shape." },
+    { "id": "suren", "name": "Suren", "icon": "🏛️", "meta": "Architect", "influence": "Pushed for clearer state boundaries." }
+  ],
+  "key_moments": [
+    { "id": "m1", "icon": "💡", "title": "Renderer felt too technical.", "detail": "This set the main product problem.", "actor_id": "user" }
+  ],
+  "evidence": [
+    { "id": "src1", "icon": "📚", "label": "Local renderer screenshots", "kind": "local", "ref": "local://docs/cytoscape-poc.html", "note": "Grounded the rendering discussion." }
   ],
   "nodes": [
-    { "id": "p1", "type": "problem", "label": "Huddle startup is brittle", "status": "active", "icon": "💡" },
-    { "id": "c1", "type": "context", "label": "Some repos have no remote or no commits", "status": "active", "icon": "🔗" },
-    { "id": "o1", "type": "option", "label": "Use safe startup helper", "status": "active", "icon": "💡" },
-    { "id": "d1", "type": "decision", "label": "Use repo_context.py for tolerant startup", "status": "agreed", "icon": "✅" },
-    { "id": "q1", "type": "question", "label": "Should local-folder mode be bootstrapped?", "status": "open", "icon": "❓" },
-    { "id": "x1", "type": "question", "label": "Should HTML rendering wait for visible tabs?", "status": "deferred", "icon": "⏸️" },
-    { "id": "a1", "type": "action", "label": "Add bootstrap config support", "status": "active", "icon": "📝" }
+    { "id": "n1", "kind": "issue", "label": "Renderer felt technical", "status": "active", "icon": "💡", "why_it_matters": "This was the main UX problem." },
+    { "id": "n2", "kind": "decision", "label": "Use raw-first graph capture", "status": "agreed", "icon": "✅", "why_it_matters": "It keeps Elango lightweight and stable." }
   ],
   "edges": [
-    { "from": "p1", "to": "c1", "type": "has_context", "status": "linked", "icon": "🔗" },
-    { "from": "c1", "to": "o1", "type": "suggests", "status": "linked", "icon": "🔗" },
-    { "from": "o1", "to": "d1", "type": "leads_to", "status": "linked", "icon": "🔗" },
-    { "from": "d1", "to": "q1", "type": "opens", "status": "open", "icon": "❓" },
-    { "from": "d1", "to": "x1", "type": "defers", "status": "deferred", "icon": "⏸️" },
-    { "from": "d1", "to": "a1", "type": "results_in", "status": "active", "icon": "📝" }
+    { "from": "n1", "to": "n2", "relation": "led_to", "label": "led to" }
   ]
 }
 ```
 
-## History Graph Shape
+## Raw Graph Shape
 
-History should preserve change over time.
+Raw graph should preserve structural change over time.
 
 Recommended model:
 
-- event stream plus graph diffs
-- or versioned graph snapshots with timestamps
+- append-only event stream
+- actor and source lookup tables
 
 Recommended structure:
 
 ```json
 {
   "session_id": "2026-04-05-main",
+  "actors": [
+    { "id": "user", "name": "Muthu", "icon": "🎼", "meta": "You" }
+  ],
+  "sources": [
+    { "id": "src1", "kind": "local", "label": "Renderer screenshot", "ref": "local://docs/cytoscape-poc.html" }
+  ],
   "events": [
     {
       "ts": "2026-04-05T11:10:00Z",
-      "kind": "node_added",
-      "actor": { "name": "Muthu", "icon": "🎼" },
-      "node": { "id": "p1", "type": "problem", "label": "Huddle startup is brittle", "icon": "💡" }
-    },
-    {
-      "ts": "2026-04-05T11:12:00Z",
-      "kind": "node_added",
-      "actor": { "name": "Suren", "icon": "🏛️" },
-      "node": { "id": "o1", "type": "option", "label": "Use safe startup helper", "icon": "💡" }
-    },
-    {
-      "ts": "2026-04-05T11:14:00Z",
-      "kind": "challenge_recorded",
-      "actor": { "name": "Shaama", "icon": "⚙️" },
-      "node": { "id": "a1", "type": "argument", "label": "Startup must not fail in no-remote repos", "icon": "⚔️" }
-    },
-    {
-      "ts": "2026-04-05T11:16:00Z",
-      "kind": "decision_recorded",
-      "actor": { "name": "Muthu", "icon": "🎼" },
-      "node": { "id": "d1", "type": "decision", "label": "Use repo_context.py for tolerant startup", "icon": "✅" }
-    },
-    {
-      "ts": "2026-04-05T11:18:00Z",
-      "kind": "deferred_recorded",
-      "actor": { "name": "Elango", "icon": "📐" },
-      "node": { "id": "x1", "type": "question", "label": "Revisit advanced renderer motion later", "icon": "⏸️" }
+      "actor_id": "user",
+      "op": "node_added",
+      "target": { "id": "n1", "kind": "issue" },
+      "payload": { "label": "Renderer felt technical", "status": "active", "source_refs": ["src1"] }
     }
   ]
 }
@@ -416,10 +397,10 @@ Elango should update these artifacts through an internal background pass after e
 Recommended structure:
 
 ```xml
-<background_pass>
+  <background_pass>
   <discussion_delta />
-  <history_graph_update />
-  <current_state_update />
+  <raw_graph_update />
+  <graph_view_projection />
   <markdown_projection />
   <visibility>internal only</visibility>
 </background_pass>
@@ -429,30 +410,29 @@ Why:
 
 - structured sections reduce collisions between visible conversation and hidden state work
 - isolated background updates keep the user-facing room clean
-- separate history and current-state sections prevent the model from collapsing them together
+- separate raw and graph-view sections prevent the model from collapsing structural capture and readable synthesis
 
 ### During Discussion
 
 Elango should:
 
-- append new nodes to history when a new topic/option/argument appears
+- append new nodes to the raw graph when a new topic/option/argument appears
 - record edges when reasoning relationships become clear
 - mark decisions only when the user makes the call
 - mark deferred items when the room intentionally postpones them
 - record rejected paths when the room clearly discards one
 - preserve open questions separately from decisions
-- preserve lightweight participant attribution when useful
+- preserve lightweight participant attribution and source refs when useful
 
-### When Rendering Current State
+### When Producing Graph View
 
 Elango should:
 
-- collapse obsolete branches
-- keep only active context
-- keep the chosen decision path
-- preserve unresolved questions
-- preserve deferred items distinctly from open questions
-- preserve next actions
+- generate what stands out
+- identify who materially shaped the room
+- compress raw events into key moments
+- attach evidence with readable refs
+- keep only meaningful visible nodes and edges
 
 ### When Producing Markdown
 
@@ -489,7 +469,7 @@ Zoom:
 - no custom zoom surface required
 - rely on browser zoom and readable layout
 
-### 2. History View
+### 2. Conversation View
 
 Shows:
 
@@ -517,17 +497,17 @@ Animation ideas:
 - step-through timeline scrubber
 - highlight newly added, challenged, agreed, and deferred nodes
 
-### 3. Current-State View
+### 3. Standing View
 
 Shows:
 
-- current problem
-- current active context
-- current live options
-- chosen decision
+- main question
+- decision and why
+- what stands out
+- connected branches
 - deferred items
 - open questions
-- next actions
+- evidence grounding
 
 Best for:
 
@@ -544,8 +524,8 @@ Zoom:
 Animation ideas:
 
 - pulse active nodes
-- dim archived or superseded paths
-- smooth transitions when current state changes
+- dim less-relevant branches
+- smooth transitions when the graph view refreshes
 
 ## Renderer Surface Guidance
 
@@ -605,8 +585,8 @@ to:
 
 That means:
 
-- he maintains the history graph
-- he maintains the current-state graph
+- he maintains the raw graph
+- he produces graph-view.json as a human-readable projection
 - he produces Markdown as a projection of the graph-backed session state
 
 ## Product Framing
@@ -617,8 +597,7 @@ Huddle can be framed as:
 
 - a participant-driven stateful discussion room
 - with evolving shared state
-- visible history
-- visible current state
+- visible graph review
 - human-readable spec output
 - background state maintenance by Elango
 
@@ -628,9 +607,9 @@ Execution can stay secondary or background-capable.
 
 Implement in this order:
 
-1. add `graph-history.json`
-2. add `graph-current.json`
+1. add `graph-raw.json`
+2. add `graph-view.json`
 3. define Elango update rules in the skill
-4. render current-state and history views with icons and readable labels
-5. add zoomable history and current-state map views
+4. render graph-review and standing views with icons and readable labels
+5. add zoomable graph map views
 6. keep Markdown as the readable export layer

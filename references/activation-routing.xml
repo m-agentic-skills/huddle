@@ -11,7 +11,8 @@
     <rule>Rotate persona participation — track who spoke recently and avoid always picking the same pair.</rule>
     <rule>Keep the room small by default. If another persona would help, suggest them to {GIT_USER} and wait for approval before adding them.</rule>
     <rule>Before writing each persona response, re-read that persona's communicationStyle and principles fields. Character consistency depends on this.</rule>
-    <rule>Elango is the source of truth for huddle memory, notes, summaries, specs, and current-state review.</rule>
+    <rule>Elango is the underlying background state worker and the source of truth for huddle memory, notes, summaries, specs, history, and current-state review.</rule>
+    <rule>All presentation semantics for history and current-state review must be written by Elango into JSON artifacts. The HTML review surface must not invent labels, statuses, or participant meaning.</rule>
     <rule>If the conversation shifts from discussion into planning, verification, research, or state review, prefer routing explicitly into that mode instead of forcing everything through the normal discussion loop.</rule>
     <rule>Smart exit must preserve not only the outcome but also the people involved — especially the active personas, the perspectives that informed the outcome, and whether the meeting ended in wrap or pause state.</rule>
     <rule>When searching for current state, relevant context, or latest standing, search across the repo's active state as well as huddle memory — not just the current huddle note.</rule>
@@ -23,7 +24,7 @@
     <rule>Planning mode is for turning a chosen direction into an implementation approach, sequence, or execution outline.</rule>
     <rule>Verification mode is for checking whether something is actually complete, sound, tested, safe, or good enough to trust.</rule>
     <rule>Research mode is for latest-signals discovery, ecosystem scanning, evidence gathering, and source-backed findings.</rule>
-    <rule>Spec-review mode is for Elango-led notes, summaries, specs, action items, and current-state review.</rule>
+    <rule>Spec-review mode is for Elango-led notes, summaries, specs, history view, action items, and current-state review.</rule>
     <rule>Wrap-up mode is for saving, pausing, closing, and optional post-meeting rendered review.</rule>
     <rule>When a decision clearly reaches closure, Elango may briefly surface with: "We've decided this. Want to have a look?"</rule>
     <rule>If {GIT_USER} asks where things stand, show the current huddle document through Elango's review flow rather than answering only from transient conversational context.</rule>
@@ -87,7 +88,7 @@
 
     <route id="spec-output" mode="spec-review">
       <when>create a spec, write the spec, give me the spec, turn this into a spec, capture this as a spec, summarize the meeting, give me the notes, action items, write up the notes</when>
-      <goal>Route to Elango's output mode. Produce notes, summary, spec, or action items from accumulated huddle memory.</goal>
+      <goal>Route to Elango's output mode. Produce notes, summary, spec, history view, current-state view, or action items from accumulated huddle memory.</goal>
       <steps>
         <step ref="steps/step-02-discussion.md">Invoke Elango's output-on-demand behavior.</step>
       </steps>
@@ -95,9 +96,9 @@
 
     <route id="status-review" mode="spec-review">
       <when>where do we stand, show me the huddle, show me the meeting, open the notes, let me see the current document, show me current state, open the huddle notes, open the meeting notes, let me have a look, show the current notes</when>
-      <goal>Route to Elango's review flow. Build current state from repo work state plus huddle memory, then use the current huddle Markdown as the source of truth for the rendered review, render it to HTML, and open it in the browser.</goal>
+      <goal>Route to Elango's review flow. Build the latest room picture from repo work state plus huddle memory, then use graph-view.json and the current huddle Markdown together as the review basis, launch the review bundle, and open it in the browser.</goal>
       <steps>
-        <step ref="steps/step-02-discussion.md">Run Elango's state-review behavior, render Markdown to HTML, and use the browser as the review surface.</step>
+        <step ref="steps/step-02-discussion.md">Run Elango's state-review behavior, launch the review bundle, and use the browser as the review surface.</step>
       </steps>
     </route>
 
@@ -119,9 +120,9 @@
 
     <route id="review-after-wrap" mode="wrap-up">
       <when>show me the final notes, open the final summary, let me review before we close, open the wrap-up notes</when>
-      <goal>After or during wrap-up, let Elango render the current huddle Markdown to HTML and open it in the browser for a final review.</goal>
+      <goal>After or during wrap-up, let Elango launch the current huddle review bundle and open it in the browser for a final review.</goal>
       <steps>
-        <step ref="steps/step-03-smart-exit.md">Use the rendered HTML review flow on the current huddle note.</step>
+        <step ref="steps/step-03-smart-exit.md">Use the browser review bundle flow on the current huddle note.</step>
       </steps>
     </route>
 
@@ -138,7 +139,7 @@
     <rule>If {GIT_USER} asks for a spec, notes, summary, or action items, route to Elango's spec-review mode rather than treating it as another persona round.</rule>
     <rule>If {GIT_USER} asks where things stand, prefer Elango's status-review route over ad hoc conversational recap.</rule>
     <rule>If a decision just reached closure and the user appears ready to inspect it, prefer the completion-review route and let Elango offer: "We've decided this. Want to have a look?"</rule>
-    <rule>If the user asks to inspect the huddle visually, use the current Markdown huddle note, render it with `python3 scripts/md_to_html.py file.md output.html`, and open the HTML in the browser.</rule>
+    <rule>If the user asks to inspect the huddle visually, use the current Markdown huddle note, launch `python3 scripts/md_to_html.py file.md`, and open the review URL in the browser.</rule>
     <rule>If planning, verification, and discussion all seem plausible, choose the narrowest mode that matches the user's primary intent instead of blending them prematurely.</rule>
     <rule>When routing to wrap-up, do not reduce the exit to a generic summary; preserve who was active, which perspectives mattered, and whether the exit is a pause or a true close.</rule>
     <rule>For status or standing questions, do not search only the current huddle note; also inspect repo work state, current branch history, and relevant cross-branch summaries before answering.</rule>

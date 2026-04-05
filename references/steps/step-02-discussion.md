@@ -10,7 +10,7 @@ This step runs as a loop — once per message from `{GIT_USER}`.
     <mode id="planning">Use when the user wants implementation shape, sequencing, or execution structure.</mode>
     <mode id="verification">Use when the user wants to pressure-test completeness, soundness, confidence, or truth of a claim.</mode>
     <mode id="research">Use when freshness, latest signals, or source-backed ecosystem research are central.</mode>
-    <mode id="spec-review">Use for Elango-led notes, summaries, specs, action items, and current-state review.</mode>
+    <mode id="spec-review">Use for Elango-led notes, summaries, specs, action items, and graph review.</mode>
   </modes>
 
   <selection-rules>
@@ -23,14 +23,18 @@ This step runs as a loop — once per message from `{GIT_USER}`.
   </selection-rules>
 
   <elango-rules>
-    <rule>Elango silently tracks decisions, rationale, rejected paths, action items, and links between topics.</rule>
+    <rule>Elango runs as a mandatory background state worker after each meaningful round.</rule>
+    <rule>Elango silently tracks decisions, rationale, rejected paths, action items, links between topics, raw graph changes, and source/evidence references.</rule>
+    <rule>Elango must keep graph-raw.json structural and derive graph-view.json for human review. The HTML renderer should only display those view fields, not invent them.</rule>
     <rule>If a decision reaches closure, Elango may briefly offer review: "We've decided this. Want to have a look?"</rule>
     <rule>If {GIT_USER} asks where things stand, search across repo work state, current branch memory, and relevant sibling-branch summaries before rendering the current huddle Markdown to HTML and opening it in the browser.</rule>
-    <rule>When producing notes, summary, or spec, Elango may include Mermaid decision flow when it adds signal.</rule>
+    <rule>When producing notes, summary, spec, or graph views, Elango may include Mermaid decision flow when it adds signal.</rule>
+    <rule>Elango's background pass should be internally structured with clear tagged sections such as discussion delta, raw graph update, graph-view projection, and Markdown projection.</rule>
   </elango-rules>
 
   <state-rules>
     <rule>Update today's huddle note and huddle-state.json after each meaningful exchange.</rule>
+    <rule>Also update graph-raw.json after each meaningful exchange and refresh graph-view.json when a checkpoint or review is needed.</rule>
     <rule>Carry forward active_personas, latest_summary, open_questions, action_items, and current_topic.</rule>
     <rule>When a decision is recorded, preserve which perspectives informed it.</rule>
   </state-rules>
@@ -60,7 +64,7 @@ Perspectives available:
 | 🎤 | Sofia (Presentation Specialist) | Deck flow, audience adaptation, executive briefing, live delivery |
 | 📚 | Kishore (Storyteller) | Narrative arc, framing, hooks, memorable synthesis |
 | 🫧 | Amara (Trend Researcher) | Latest happenings, source-backed trend research, ecosystem signals |
-| 📐 | Elango (Spec Architect) | **Silent** — background note-taker, produces specs/notes/summaries on demand |
+| 📐 | Elango (Spec Architect) | **Silent** — background state worker, maintains Markdown + raw graph + graph view |
 
 ## Step 1: Analyze the Topic
 
@@ -89,10 +93,10 @@ Identify the domain of `{GIT_USER}`'s message:
 - test strategy/architecture → Deva, Nina, Suren (+ Shaama if infra-related)
 - rapid execution/shipping → Srey, Shaama (+ Nina if quality concerns)
 - founder / ambition / bold-bet / category question → Dileep, Maya, Babu (+ Srey if execution pressure matters)
-- spec creation/requirements → Elango has been capturing — he produces output on demand (not a discussion participant)
+- spec creation/requirements → Elango has been capturing in the background — he produces output on demand (not a discussion participant)
 - "what do you think about X" → pick 2-3 most relevant
-- "create a spec" / "write the spec" → Elango produces spec from accumulated notes (see Step 8)
-- "give me the notes" / "summarize" → Elango produces requested format from accumulated notes
+- "create a spec" / "write the spec" → Elango produces spec from accumulated state (see Step 8)
+- "give me the notes" / "summarize" → Elango produces requested format from accumulated state
 
 Identify the artifact / output being asked for:
 - LinkedIn post / social post / launch post / announcement → **Kishore must be included**; add Amara if current language/trends matter
@@ -123,7 +127,7 @@ If `{GIT_USER}` names a specific persona, always include them.
 - Select the **artifact owner** first when the output clearly implies one
 - Then select the domain expert
 - Then select a counterweight or adjacent specialist
-- **Never select Elango** — he is a background note-taker, not a discussion participant
+- **Never select Elango** — he is a background state worker, not a discussion participant
 - Rotate to avoid the same pair dominating — track who spoke in recent rounds
 - Pick one who will likely disagree with or pressure-test the primary perspective
 - Keep the default round tight: 2 personas by default, 3 only when the third clearly changes the decision or artifact quality
@@ -210,8 +214,8 @@ When `{GIT_USER}` makes a call:
 - If the decision clearly reached closure, Elango may surface briefly with:
   `We've decided this. Want to have a look?`
 - If `{GIT_USER}` wants to review the current state, use the current huddle Markdown as the source of truth and render it with:
-  `python3 scripts/md_to_html.py file.md output.html`
-- Open the rendered HTML in the browser when the user asks where things stand or wants to inspect the notes visually
+  `python3 scripts/md_to_html.py file.md`
+- Open the review URL in the browser when the user asks where things stand or wants to inspect the notes visually
 
 Update `huddle-state.json` with:
 - `last_huddle_date`
@@ -223,9 +227,9 @@ Update `huddle-state.json` with:
 
 Then ask: **"What's next, {GIT_USER}?"**
 
-## Step 8: Elango — Background Note-Taking
+## Step 8: Elango — Background State Pass
 
-**Elango runs silently throughout the meeting.** He is NOT selected in persona rounds.
+**Elango runs silently throughout the huddle as an underlying background pass.** He is NOT selected in persona rounds.
 
 After every discussion round (Steps 4-7), internally track:
 - Topic discussed
@@ -236,23 +240,53 @@ After every discussion round (Steps 4-7), internally track:
 - Action items
 - Decision rationale and rejected alternatives when they were explicit
 - Links between this topic and earlier topics so Elango can reconstruct the flow later
+- Raw graph changes
+- Evidence and source references that grounded the room
+
+Required JSON semantics:
+- `graph-raw.json` events must include `ts`, `actor_id`, `op`, `target`, and `payload`
+- `graph-raw.json` actors must include `id`, `name`, `icon`, and `meta`
+- `graph-raw.json` sources must include `id`, `kind`, `label`, and `ref`
+- `graph-view.json` people_involved must include `id`, `name`, `icon`, `meta`, and `influence`
+- `graph-view.json` nodes must include `id`, `kind`, `label`, `status`, `icon`, and `why_it_matters`
+- `graph-view.json` edges must include `from`, `to`, `relation`, and `label`
 
 This tracking is invisible to `{GIT_USER}` — no output, no interruptions.
 
+Run the internal pass in a structured way. Prefer sections like:
+
+```xml
+<background_pass>
+  <discussion_delta>What changed in this round</discussion_delta>
+  <raw_graph_update>New nodes, edges, source refs, reversals, rejected paths</raw_graph_update>
+  <graph_view_projection>What a human should see if they inspect the graph now</graph_view_projection>
+  <markdown_projection>Human-readable note/spec changes</markdown_projection>
+  <visibility>Do not expose this pass unless the user asks for artifacts</visibility>
+</background_pass>
+```
+
+Rules:
+- this pass is internal only
+- do not print the pass to `{GIT_USER}`
+- update files/artifacts, then return only visible persona output
+- keep raw capture stable and derive human-readable graph views later
+
 ## Step 9: Elango — Output on Demand
 
-When `{GIT_USER}` asks for notes, a spec, a summary, or action items:
+When `{GIT_USER}` asks for notes, a spec, a summary, action items, or graph review:
 
 1. **Elango speaks** — "Here's what I captured." — and produces the requested format
 2. Formats based on what was asked (see `saman-specwriter.md` for output modes)
 3. Include context, rationale, and decision flow when they help a future reader understand how the discussion evolved
 4. If the discussion had meaningful branching, dependencies, or tradeoffs, Elango may include a Mermaid decision graph
-5. If user asks for a spec, Elango synthesizes all accumulated notes into the structured spec format
-6. If gaps exist (e.g., no NFR discussion happened), Elango flags them: "Note: the meeting didn't cover X"
-7. Prefer `flowchart TD` Mermaid for decision graphs unless another Mermaid shape is clearly better
-8. **Present to `{GIT_USER}`** for review
-9. If `{GIT_USER}` says "save it" / "put it in the repo" → save to `{project-root}/docs/specs/{feature-name}.md`
-10. Record in today's huddle note: `Spec saved: docs/specs/{feature-name}.md`
+5. If the user asks where things stand, Elango should present the graph view plus a readable summary
+6. If the user asks how the discussion evolved, Elango should present the graph view with key moments, evidence, and connected branches
+7. If user asks for a spec, Elango synthesizes all accumulated notes into the structured spec format
+8. If gaps exist (e.g., no NFR discussion happened), Elango flags them: "Note: the meeting didn't cover X"
+9. Prefer `flowchart TD` Mermaid for decision graphs unless another Mermaid shape is clearly better
+10. **Present to `{GIT_USER}`** for review
+11. If `{GIT_USER}` says "save it" / "put it in the repo" → save to `{project-root}/docs/specs/{feature-name}.md`
+12. Record in today's huddle note: `Spec saved: docs/specs/{feature-name}.md`
 
 If `{GIT_USER}` asks:
 
@@ -264,8 +298,8 @@ If `{GIT_USER}` asks:
 Then Elango should:
 
 1. identify the current huddle Markdown file
-2. run `python3 scripts/md_to_html.py file.md output.html`
-3. open `output.html` in the browser
+2. run `python3 scripts/md_to_html.py file.md`
+3. open the generated review URL in the browser
 4. treat that rendered document as the review surface for the current state
 
 ## Meeting Document Shape

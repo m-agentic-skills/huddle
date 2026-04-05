@@ -31,6 +31,14 @@ def huddle_note_path(reponame, branch, date_str):
     return huddle_dir(reponame, branch) / f"{date_str}.md"
 
 
+def graph_raw_path(reponame, branch):
+    return huddle_dir(reponame, branch) / "graph-raw.json"
+
+
+def graph_view_path(reponame, branch):
+    return huddle_dir(reponame, branch) / "graph-view.json"
+
+
 def ensure(reponame, branch, date_str):
     root = huddle_dir(reponame, branch)
     root.mkdir(parents=True, exist_ok=True)
@@ -62,6 +70,45 @@ def ensure(reponame, branch, date_str):
             encoding="utf-8",
         )
 
+    raw_graph = graph_raw_path(reponame, branch)
+    if not raw_graph.exists():
+        raw_graph.write_text(
+            json.dumps(
+                {
+                    "session_id": f"{date_str}-{branch}",
+                    "actors": [],
+                    "sources": [],
+                    "events": [],
+                },
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+    view_graph = graph_view_path(reponame, branch)
+    if not view_graph.exists():
+        view_graph.write_text(
+            json.dumps(
+                {
+                    "session_id": f"{date_str}-{branch}",
+                    "generated_at": "",
+                    "main_question": "",
+                    "decision": "",
+                    "decision_why": "",
+                    "what_stands_out": [],
+                    "people_involved": [],
+                    "key_moments": [],
+                    "evidence": [],
+                    "nodes": [],
+                    "edges": [],
+                },
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
     print(
         json.dumps(
                 {
@@ -69,6 +116,8 @@ def ensure(reponame, branch, date_str):
                     "branch_dir": str(branch_dir(reponame, branch)),
                     "huddle_state_file": str(huddle_state),
                     "huddle_note_file": str(huddle_note),
+                    "graph_raw_file": str(raw_graph),
+                    "graph_view_file": str(view_graph),
                 },
             indent=2,
         )

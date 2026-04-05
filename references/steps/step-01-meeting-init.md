@@ -66,6 +66,10 @@ python {skill-root}/scripts/meeting_state.py ensure {REPO_NAME} {BRANCH} {YYYY-M
 
 Creates missing directories (including `{HUDDLE_DIR}`), `huddle-state.json`, and today's `{YYYY-MM-DD}.md` if they don't exist.
 
+This initialization should also ensure:
+- `graph-raw.json`
+- `graph-view.json`
+
 ## 5. Gather Session Context (Highest Priority)
 
 This is the most important context source. Run before loading any huddle notes.

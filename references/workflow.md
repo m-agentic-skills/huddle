@@ -22,6 +22,8 @@ Run a repo-scoped, daily, resumable discussion with multi-perspective analysis a
     └── huddle/
         ├── huddle-state.json            ← open questions, action items, last topic
         └── {YYYY-MM-DD}.md              ← daily huddle note
+        ├── graph-raw.json               ← append-oriented structural room changes
+        └── graph-view.json              ← human-readable graph projection
 ```
 
 Branch name is sanitised for the filesystem (e.g. `feature/login` → `feature-login`).
