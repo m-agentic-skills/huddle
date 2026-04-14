@@ -9,6 +9,9 @@ description: >
   "what did we decide", "get me a spec", "summarise the huddle", "what are the action items".
   Also trigger when the user seems blocked, frustrated, or facing a decision with multiple tradeoffs —
   even if they don't explicitly ask for a huddle.
+  Mission mode triggers: "execute this", "build this", "mission mode", "turn this into a mission",
+  "let's ship this", "make it happen", "start the mission", "dispatch workers", "continue the mission",
+  "validate the mission", "run validators".
 ---
 
 # Huddle

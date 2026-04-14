@@ -22,9 +22,18 @@ Run a repo-scoped, daily, resumable discussion with multi-perspective analysis a
     └── huddle/
         ├── huddle-state.json            ← synthesized state (written on demand or wrap-up, not every round)
         ├── {YYYY-MM-DD}.md              ← daily huddle note (written on demand or wrap-up, not every round)
-        └── raw/                         ← append-only event files (fire-and-forget background writes)
-            ├── {ts}_decision.json       ← one file per decision
-            └── {ts}_milestone.json      ← one file per milestone
+        ├── raw/                         ← append-only event files (fire-and-forget background writes)
+        │   ├── {ts}_decision.json       ← one file per decision
+        │   └── {ts}_milestone.json      ← one file per milestone
+        └── mission/                     ← mission execution state (created by mission-plan)
+            ├── contract.md              ← validation contract (what "done" looks like)
+            ├── features.json            ← feature decomposition with milestones
+            ├── status.json              ← per-feature execution status
+            ├── specs/                   ← per-feature spec files (for external dispatch)
+            │   └── {feature_id}.md
+            └── reports/                 ← validator findings
+                ├── {feature_id}.json    ← scrutiny report per feature
+                └── milestone_{id}.json  ← black-box report per milestone
 ```
 
 Branch name is sanitised for the filesystem (e.g. `feature/login` → `feature-login`).
@@ -55,6 +64,15 @@ State write behavior:
 - on decisions/milestones: Write tool appends a single raw event JSON file to `raw/` — no Python script, no background process, just a direct file write
 - on explicit ask ("give me notes") or wrap-up: synthesis reads `raw/*.json` + conversation → writes `huddle-state.json` + `.md` → deletes `raw/`
 - use `{PYTHON_BIN}` (detected once in preflight) for script invocations (md_to_html.py, project_state.py, etc.) — never hardcode python3/python
+
+Mission execution behavior:
+- mission state lives in `{HUDDLE_DIR}/mission/` — separate from huddle discussion state
+- mission-plan writes `contract.md` and `features.json` after user approval
+- mission-execute dispatches workers via `Agent(isolation="worktree")` for parallel execution, or sequentially, or via external agents
+- mission-validate spawns fresh-context validators with NO implementation knowledge
+- mission-fix converts validator findings into targeted fix-features and re-dispatches
+- the execute→validate→fix loop repeats until milestone passes or round limit (4) reached
+- all Agent calls for a milestone go in a SINGLE message to enable concurrent execution
 
 Graph review behavior:
 - state lives in `huddle-state.json` only — no `graph-raw.json`

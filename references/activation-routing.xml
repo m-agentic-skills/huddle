@@ -20,13 +20,14 @@
   </defaults>
 
   <state-management>
-    <rule>Maintain an internal meeting mode for the current turn: discussion, planning, verification, research, brainstorming, spec-review, or wrap-up.</rule>
+    <rule>Maintain an internal meeting mode for the current turn: discussion, planning, verification, research, brainstorming, spec-review, mission, or wrap-up.</rule>
     <rule>Discussion is the default mode when a topic is being explored or debated.</rule>
     <rule>Planning mode is for turning a chosen direction into an implementation approach, sequence, or execution outline.</rule>
     <rule>Verification mode is for checking whether something is actually complete, sound, tested, safe, or good enough to trust.</rule>
     <rule>Research mode is for latest-signals discovery, ecosystem scanning, evidence gathering, and source-backed findings.</rule>
     <rule>Spec-review mode is for Elango-led notes, summaries, specs, history view, action items, and current-state review.</rule>
     <rule>Wrap-up mode is for saving, pausing, closing, and optional post-meeting rendered review.</rule>
+    <rule>Mission mode is for converting a huddle plan into executable work — validation contract, feature decomposition, parallel worker dispatch, independent validation, and fix loops. The huddle becomes the orchestrator; workers and validators run as isolated agents.</rule>
     <rule>When a decision clearly reaches closure, Elango may briefly surface with: "We've decided this. Want to have a look?"</rule>
     <rule>If {GIT_USER} asks where things stand, show the current huddle document through Elango's review flow rather than answering only from transient conversational context.</rule>
     <rule>The readable graph is request-driven. Derive it only for explicit review, status checks, decision check-ins, or wrap-up review.</rule>
@@ -191,6 +192,33 @@
       </steps>
     </route>
 
+    <!-- MISSION MODE — plan, execute, validate, fix loop -->
+
+    <route id="mission-plan" mode="mission">
+      <when>execute this, build this, mission mode, turn this into a mission, let's ship this, make it happen, start the mission, create a mission, turn the plan into code, dispatch workers</when>
+      <goal>Convert the current huddle plan into an executable mission: write a validation contract (what "done" looks like), decompose into features with success criteria, group into milestones, and let {GIT_USER} choose an execution backend (parallel worktree agents, sequential, or external dispatch).</goal>
+      <steps>
+        <step ref="steps/step-mission-plan.md">Write validation contract and decompose features.</step>
+        <step ref="steps/step-mission-execute.md">Dispatch workers per chosen backend.</step>
+      </steps>
+    </route>
+
+    <route id="mission-validate" mode="mission">
+      <when>validate the mission, run validators, check the work, verify the features, are the workers done</when>
+      <goal>Spawn fresh-context validators to independently verify completed work against the validation contract. Validators have no implementation context.</goal>
+      <steps>
+        <step ref="steps/step-mission-validate.md">Dispatch scrutiny and black-box validators.</step>
+      </steps>
+    </route>
+
+    <route id="mission-resume" mode="mission">
+      <when>continue the mission, resume the mission, pick up the mission, what's the mission status, where is the mission</when>
+      <goal>Resume a paused or in-progress mission. Load status.json, show current state, and continue from where we left off.</goal>
+      <steps>
+        <step ref="steps/step-mission-execute.md">Resume from current mission state.</step>
+      </steps>
+    </route>
+
   </routes>
 
   <disambiguation>
@@ -206,6 +234,9 @@
     <rule>If a decision just reached closure and the user appears ready to inspect it, prefer the completion-review route and let Elango offer: "We've decided this. Want to have a look?"</rule>
     <rule>Never auto-open the graph review page. Only launch `md_to_html.py` and open the browser when {GIT_USER} explicitly asks to see the graph (e.g. "show me the graph", "open the graph", "open the review page"). For all other status/review requests, summarize in conversation.</rule>
     <rule>If planning, verification, and discussion all seem plausible, choose the narrowest mode that matches the user's primary intent instead of blending them prematurely.</rule>
+    <rule>If {GIT_USER} says "execute this", "build this", "make it happen", "ship this", "mission mode", or "dispatch workers" — route to mission-plan. This is distinct from planning mode: planning produces a plan, mission mode produces running code via parallel workers.</rule>
+    <rule>If a mission is in progress (status.json exists with state not "complete") and {GIT_USER} asks "continue the mission" or "where is the mission" — route to mission-resume.</rule>
+    <rule>If {GIT_USER} asks to validate during a mission — route to mission-validate. Do not confuse with verification mode (which is huddle discussion about whether something is sound).</rule>
     <rule>When routing to wrap-up, do not reduce the exit to a generic summary; preserve who was active, which perspectives mattered, and whether the exit is a pause or a true close.</rule>
     <rule>If {GIT_USER} asks to brainstorm, generate ideas, explore options, or says "I need ideas" — route to the brainstorming route. Elanchezian takes the room as a sub-task, controls persona participation, and hands back when done.</rule>
     <rule>Elanchezian can add/remove personas during brainstorming and always has Amara on call for research. This room control is limited to the brainstorming sub-task.</rule>
