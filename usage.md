@@ -115,7 +115,7 @@ A regular LLM conversation is always the same mode: you ask, it answers. Huddle 
 
 **Brainstorming** — "I need ideas" — Elanchezian takes the room through 4 structured phases with anti-bias domain pivoting. Not a list of suggestions — a facilitated creative process.
 
-**Spec / Notes** — "give me the action items" — Elango synthesizes everything into structured output. Decisions with rationale, rejected paths, open questions, Mermaid graphs.
+**Spec Review** — "give me the action items" — Elango synthesizes everything into structured output. Decisions with rationale, rejected paths, open questions, Mermaid graphs.
 
 **Wrap-Up** — "save and pause" — Persists full state. Resume tomorrow with complete context, active personas restored, new repo activity surfaced.
 
@@ -173,11 +173,11 @@ Huddle isn't for every question. If you know what to build and just need help co
 
 LLM conversations are ephemeral. Huddle conversations survive.
 
-Every decision, milestone, and key moment is written as a raw event file during the session. When you ask for notes or wrap up, Elango synthesizes everything into:
+Decisions and milestones are written as raw event files during the session — one file per event, no merges, no locks. Normal discussion rounds write nothing. When you ask for notes or wrap up, Elango synthesizes everything into:
 
 - **`huddle-state.json`** — the machine-readable source of truth with decisions, participants, key moments, open questions, action items
 - **`YYYY-MM-DD.md`** — the daily huddle note with topics, perspectives, rationale, rejected paths, and Mermaid decision flows
-- **Interactive graph review** — an HTML page that visualizes your decision flow, participants, and evidence (only opens when you explicitly ask)
+- **Interactive graph review** — an HTML page that visualizes your decision flow, participants, and evidence. Never auto-opens — only launches when you explicitly say "show me the graph"
 
 State lives at `~/config/.m-agent-skills/{repo}/{branch}/huddle/`. Branch-scoped. Cross-branch aware — it reads what was decided on `main` while you're on your feature branch.
 
