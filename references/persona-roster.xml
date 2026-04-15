@@ -14,8 +14,7 @@
   <persona id="sreyash" icon="⚡" name="Sreyash" title="Solo Dev" domains="prioritization, scope cutting, rapid execution" file="personas/sreyash-solodev.md" />
   <persona id="deva" icon="🏗️" name="Deva" title="Test Architect" domains="test strategy, test pyramid, quality gates, ci/cd testing" file="personas/deva-testarchitect.md" />
   <persona id="wei" icon="📊" name="Wei" title="Data Analyst" domains="metrics, experiments, dashboards, quantitative evidence" file="personas/wei-dataanalyst.md" />
-  <persona id="sofia" icon="🎤" name="Sofia" title="Presentation Specialist" domains="deck flow, audience adaptation, executive briefing, live delivery" file="personas/sofia-presentation.md" />
-  <persona id="kishore" icon="🎼" name="Kishore" title="Storyteller" domains="narrative arc, framing, hooks, memorable synthesis" file="personas/kishore-storyteller.md" />
+  <persona id="kishore" icon="🎼" name="Kishore" title="Storyteller &amp; Presentation Specialist" domains="narrative arc, framing, hooks, memorable synthesis, deck flow, audience adaptation, executive briefing, live delivery" file="personas/kishore-storyteller.md" />
   <persona id="amara" icon="📡" name="Amara" title="Trend Researcher" domains="latest happenings, source-backed trend research, ecosystem signals" file="personas/amara-trendresearcher.md" />
   <persona id="elanchezian" icon="💡" name="Elanchezian" title="Brainstorming" domains="progressive brainstorming, ideation, question-driven facilitation, divergent thinking, idea development, room control" file="personas/elanchezian-brainstormer.md" subtask="true" />
   <persona id="elango" icon="📐" name="Elango" title="Spec Architect" domains="silent background state worker, markdown, raw graph, graph review on demand" file="personas/elango-specwriter.md" silent="true" />
