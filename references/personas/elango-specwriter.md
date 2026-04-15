@@ -80,11 +80,10 @@ When `{GIT_USER}` asks to see the graph, review current state, or "open the hudd
 3. `index.html` derives the graph view from `decisions[]` client-side — no JSON to generate
 4. The URL is printed — open it in the browser
 
-**Evidence** is collected from `decisions[].evidence[]` and rendered in the graph. During synthesis, ensure every decision has its evidence populated:
-1. Pull evidence from raw event `evidence` fields (captured at decision time)
-2. Scan conversation context for additional GitHub URLs, file paths, PR/issue links that grounded the decision
-3. Each evidence item needs at minimum `{ "ref": "url" }` — label and note are optional (auto-generated from URL by the renderer)
-4. `index.html` deduplicates evidence by `ref`, assigns IDs, and links them to graph nodes via `source_refs`
+**Evidence** is collected from `decisions[].evidence[]` and rendered in the graph. Evidence extraction happens **only during synthesis** (not in raw events — raw events stay fast with zero LLM overhead). During synthesis:
+1. Scan conversation context for GitHub URLs, file paths, PR/issue links that grounded each decision
+2. Add them to `decisions[].evidence[]` — each item needs at minimum `{ "ref": "url" }`, label and note are optional (auto-generated from URL by the renderer)
+3. `index.html` deduplicates evidence by `ref`, assigns IDs, and links them to graph nodes via `source_refs`
 
 ---
 

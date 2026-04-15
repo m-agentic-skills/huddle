@@ -235,23 +235,18 @@ Write a JSON file to `{HUDDLE_DIR}/raw/{timestamp_ms}_{type}.json` where `timest
   "personas": ["Shaama", "Suren"],
   "by": "{GIT_USER}",
   "rejected": ["..."],
-  "open": ["..."],
-  "evidence": [
-    { "ref": "https://...", "label": "...", "note": "..." }
-  ]
+  "open": ["..."]
 }
 ```
 
-This is a single atomic file write — no reads, no merges, no Python process, no script invocation. Instant.
+This is a single atomic file write — no reads, no merges, no Python process, no script invocation. Instant. **No evidence extraction here** — that happens during synthesis, which already requires LLM processing.
 
 **Event types to write:**
 
 | Trigger | Event type | When |
 |---|---|---|
-| `decision` | User confirms a decision | Include `topic`, `content`, `personas`, `by`, optional `rejected`, `open`, `evidence` |
-| `milestone` | Key moment (tension surfaced, path rejected, important insight) | Include `topic`, `content`, `personas`, optional `evidence` |
-
-**Evidence capture rule:** When writing a raw event, include any URLs, file paths, GitHub links, or references that were mentioned in the discussion and are relevant to this decision or milestone. Each evidence item needs at minimum a `ref` (the URL or path). `label` and `note` are optional — synthesis will auto-generate labels from URLs if missing.
+| `decision` | User confirms a decision | Include `topic`, `content`, `personas`, `by`, optional `rejected`, `open` |
+| `milestone` | Key moment (tension surfaced, path rejected, important insight) | Include `topic`, `content`, `personas` |
 
 Normal discussion rounds (no decision, no milestone) → **no write at all**.
 
@@ -278,10 +273,10 @@ When `{GIT_USER}` asks for notes, a spec, a summary, action items, or graph revi
 5. Delete all files in `{HUDDLE_DIR}/raw/` (they've been synthesized)
 6. Do NOT auto-open the graph review page. Only run `{PYTHON_BIN} {SKILL_ROOT}/scripts/md_to_html.py {HUDDLE_NOTE_FILE}` when {GIT_USER} explicitly asks to see the graph.
 
-**Critical: Evidence and linked_topics during synthesis:**
+**Critical: Evidence and linked_topics during synthesis (this is where evidence extraction happens — not in raw events):**
 
 Each decision in `huddle-state.json` must include:
-- `evidence[]` — Collect from raw event `evidence` fields AND from conversation context. Scan the discussion for GitHub URLs, file paths, PR links, issue links, and external references that grounded or supported the decision. Each evidence item needs at minimum `{ "ref": "url" }`. Label and note are optional — the graph renderer auto-generates labels from URLs.
+- `evidence[]` — Scan the conversation context for GitHub URLs, file paths, PR links, issue links, and external references that were mentioned in relation to this decision. Each evidence item needs at minimum `{ "ref": "url" }`. Label and note are optional — the graph renderer auto-generates labels from URLs if missing.
 - `linked_topics[]` — Array of other decision IDs (e.g. `["d-1"]`) when decisions are related. Infer from conversation flow: if one decision led to or depends on another, link them. These create edges in the graph.
 - `personas_involved[]` — Transform persona name strings from raw events into objects: `{ "id": "shaama", "name": "Shaama", "icon": "⚙️", "meta": "Engineering" }`. Look up icons and meta from the persona roster.
 
