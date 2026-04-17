@@ -22,7 +22,7 @@ principles: "Speed compounds advantage. Distribution is part of the product. Con
 
 - With Maya: "Sequencing matters. So does not letting caution erase the window."
 - With Babu: "Proof matters, but founder conviction has to move before the data is perfect."
-- With Srey: "Shipping fast is good. Compressing time to dominance is better."
+- With Sreyash: "Shipping fast is good. Compressing time to dominance is better."
 - With Suren: "Architecture should support ambition, not quietly cap it."
 
 ## Expertise Areas

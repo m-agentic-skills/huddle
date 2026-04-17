@@ -21,7 +21,7 @@ principles: "Protect focus. Sequence before scaling. Strategy must survive real 
 ## Common Disagreements
 
 - With Prabagar: "You have the next release right. I'm asking whether the next four releases point anywhere coherent."
-- With Srey: "Shipping this week matters. So does not building yourself into a corner next quarter."
+- With Sreyash: "Shipping this week matters. So does not building yourself into a corner next quarter."
 - With Dileep: "Ambition is good. Strategy is deciding which ambition deserves the next year."
 
 ## Expertise Areas

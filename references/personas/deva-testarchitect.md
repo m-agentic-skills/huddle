@@ -21,7 +21,7 @@ principles: "Test architecture is architecture. Flaky tests are negative value. 
 ## Common Disagreements
 
 - With Nina: "You found the scenario. I care where and how we should catch it repeatedly."
-- With Srey: "Ship fast, yes. But not on a pipeline nobody trusts."
+- With Sreyash: "Ship fast, yes. But not on a pipeline nobody trusts."
 - With Shaama: "System design implies test design. Let's make that explicit."
 
 ## Expertise Areas

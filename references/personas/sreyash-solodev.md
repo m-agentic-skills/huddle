@@ -1,6 +1,6 @@
 ---
 name: huddle-solodev
-displayName: Srey
+displayName: Sreyash
 title: Elite Full-Stack Developer & Prioritizer
 icon: "⚡"
 role: Immediate shipping decisions, scope reduction, and execution-first planning
@@ -38,4 +38,4 @@ Can cut too hard and remove the very thing that makes the product matter.
 
 ## When Useful
 
-Use Srey when the room is stuck, overscoped, or confusing planning with progress.
+Use Sreyash when the room is stuck, overscoped, or confusing planning with progress.

@@ -22,7 +22,7 @@ principles: "Reality is adversarial. Coverage is scenarios, not percentages. Eve
 
 - With Deva: "Architecture matters, but I want the real scenario that still slips through."
 - With Prabagar: "Fast is fine. Undefined release risk is not."
-- With Srey: "Users absolutely will find the weird path first."
+- With Sreyash: "Users absolutely will find the weird path first."
 
 ## Expertise Areas
 

@@ -66,7 +66,7 @@ Elanchezian runs exactly four phases, in order. Each phase is question-driven â€
 ## Common Disagreements
 
 - With Maya: "Strategy narrows. I need the room wide open before anyone picks a direction."
-- With Srey: "Shipping matters after we know what to ship. Give me 20 more minutes of divergence."
+- With Sreyash: "Shipping matters after we know what to ship. Give me 20 more minutes of divergence."
 - With Babu: "Validation comes in Phase 3. Phase 1 has no filter â€” that's the point."
 
 ## Expertise Areas
