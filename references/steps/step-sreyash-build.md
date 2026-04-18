@@ -42,14 +42,54 @@ Each phase file is self-contained with its own XML policy blocks — parse once 
   <phase-presence phase="1-init" location="main thread (foreground)" reason="clarify round with user" />
   <phase-presence phase="2-spec|3-process|4-wrap" location="spawned background agent" reason="work runs async while huddle continues" />
   <on-completion>
-    <step>Background agent's report surfaces on main thread under header "⚡ Sreyash back with results".</step>
+    <step>Background agent's report surfaces on main thread under header "⚡ Sreyash ({slug}) back with results".</step>
     <step>Sreyash asks one follow-up question (e.g., "Want Nina to pressure-test, or review yourself?").</step>
     <step>Huddle loop waits for {GIT_USER}'s response, then continues normally — no explicit exit, no skill termination.</step>
   </on-completion>
   <on-user-pause>
-    <rule>If {GIT_USER} says "pause" or "wrap" while Sreyash is still running, huddle wrap-up (step-03-smart-exit.md) captures the in-progress state. Sreyash's task manifest on disk preserves where he left off; next session can resume.</rule>
+    <rule>If {GIT_USER} says "pause" or "wrap" while any Sreyash is still running, huddle wrap-up (step-03-smart-exit.md) captures the in-progress state. Each Sreyash task manifest on disk preserves where it left off; next session can resume.</rule>
   </on-user-pause>
 </presence-model>
+```
+
+## Multi-Instance Policy (parallel Sreyash tasks)
+
+Sreyash is **not a singleton**. Multiple Sreyash instances can run concurrently — each owns a distinct task manifest and distinct builder crew.
+
+```xml
+<multi-instance-policy>
+  <rule>Each Sreyash invocation = a new task manifest at sreyash/{NNN}-{slug}/task.xml. No shared state between concurrent tasks.</rule>
+  <rule>User (or another persona) can trigger a new Sreyash while one or more are still in flight. The in-flight ones keep running.</rule>
+  <rule>Each instance spawns its own builder crew under its own namespace. Collision-free because slugs are unique (NNN auto-increments; user's clarify round names the slug).</rule>
+  <concurrent-cap>
+    <rule>Soft cap: 3 concurrent Sreyash instances (each with its own builder crew, up to 12 builders each — so worst case ~36 concurrent agents).</rule>
+    <rule>At the cap: main thread asks {GIT_USER} to confirm before spawning a 4th. Not a hard block — just a sanity check.</rule>
+  </concurrent-cap>
+  <on-new-trigger-while-busy>
+    <step>Main thread surfaces current roster: "Currently running: ⚡ Sreyash (024-ui-api-contract-alignment) ⏳, ⚡ Sreyash (025-payments-flow) ⏳."</step>
+    <step>Run init phase for the new task normally. New clarify round is independent of the others.</step>
+    <step>On user's "go", spawn the new background agent alongside the existing ones.</step>
+  </on-new-trigger-while-busy>
+  <on-any-completion>
+    <step>Whichever Sreyash finishes first surfaces its report first, tagged with its slug.</step>
+    <step>Other in-flight instances keep running; their completion surfaces independently when ready.</step>
+    <step>User can review or respond to one report without pausing the others.</step>
+  </on-any-completion>
+  <on-resume>
+    <rule>Manifests on disk are namespaced by slug. Resume can target a specific instance by slug, or list all in-progress tasks and let the user pick.</rule>
+  </on-resume>
+</multi-instance-policy>
+```
+
+**Practical example:**
+```
+10:00  User: "Sreyash, build the API contract alignment"
+10:01  Sreyash (024-ui-api-contract-alignment) spawned → background
+10:05  User: "Also, Sreyash build the payments flow"
+10:06  Sreyash (025-payments-flow) spawned → background
+10:12  Sreyash (025-payments-flow) returns first (smaller task) → report surfaces
+10:14  User continues huddle on something else
+10:25  Sreyash (024-ui-api-contract-alignment) returns → report surfaces
 ```
 
 ## Core Invariants (across all phases)
