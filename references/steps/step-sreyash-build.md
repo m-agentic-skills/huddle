@@ -92,126 +92,184 @@ Sreyash loads repo-level spec config before asking anything. Config path:
 
 ## First-Time Auto-Detection (silent — no questions unless detection fails)
 
-Sreyash resolves these in order. Each has a deterministic default that fires without asking.
+Sreyash resolves these in order, deterministically, without asking. Rules are expressed as XML policy so the agent parses them unambiguously.
 
-1. **Storage root + spec style** (no questions — mirror what the repo already does):
-   - If `openspec/` exists → `storage_root = openspec/specs/`, `spec_style = openspec`. Follow OpenSpec layout: `{slug}/spec.md`, deltas under `openspec/changes/{change-slug}/`.
-   - Elif `docs/specs/` exists and contains **`^\d+[-_].*/` subfolders** (with `spec.md` or similar inside) → `spec_style = folder-md`. Mirror existing separator (hyphen or underscore).
-   - Elif `docs/specs/` exists and contains **flat `^\d+[-_].*\.md` files** at the top level → `spec_style = flat-md`. Mirror existing separator.
-   - Elif `docs/specs/` exists but is empty or mixed → default to `flat-md` with hyphen separator.
-   - Else → create `docs/specs/`, use `flat-md` with hyphen separator.
+```xml
+<auto-detection-policy>
+  <rule id="ad-01-never-ask">
+    Environment is detected, never asked. Sreyash only pauses on human-judgment items (scope, AC, off-limits).
+  </rule>
 
-   **Key rule:** match the repo's existing convention exactly. Never convert an `flat-md` repo into `folder-md` just because Sreyash finds folders easier.
+  <rule id="ad-02-match-existing">
+    Always mirror the repo's existing convention exactly. Never convert between spec styles.
+  </rule>
 
-2. **Monorepo detection** (silent):
-   - Check `pnpm-workspace.yaml`, `turbo.json`, `nx.json`, `lerna.json`, `rush.json`, `go.work`, `Cargo.toml [workspace]`, `pyproject.toml` multi-subproject, root `package.json` `workspaces` field, or `apps/*` + `packages/*` shape.
-   - If `project.md` exists and says "Monorepo", trust it.
-   - Result: `monorepo: true|false`. No user prompt.
+  <detection order="1" field="storage_root + spec_style">
+    <case condition="openspec/ exists">
+      <set storage_root="openspec/specs/" spec_style="openspec" />
+      <note>Follow OpenSpec layout: {slug}/spec.md, deltas under openspec/changes/{change-slug}/.</note>
+    </case>
+    <case condition="docs/specs/ exists AND contains ^\d+[-_].*/ subfolders with spec.md inside">
+      <set spec_style="folder-md" />
+      <detect field="spec_separator" from="existing-folder-names" />
+    </case>
+    <case condition="docs/specs/ exists AND contains flat ^\d+[-_].*\.md files at top level">
+      <set spec_style="flat-md" />
+      <detect field="spec_separator" from="existing-file-names" />
+    </case>
+    <case condition="docs/specs/ exists but empty or mixed">
+      <set spec_style="flat-md" spec_separator="-" />
+    </case>
+    <default>
+      <create path="docs/specs/" />
+      <set spec_style="flat-md" spec_separator="-" />
+    </default>
+  </detection>
 
-3. **Packages enumeration** (monorepo only, silent):
-   - Enumerate package folders from workspace manifests or directory scan.
-   - For each: detect language (TS/JS/Python/Go/Rust) from config files; detect test framework from `package.json` scripts / devDependencies / `pyproject.toml` / `go.mod`.
-   - Infer `kind` from folder name/location heuristics (`apps/web`/`apps/ui` → `web-frontend`; `apps/api`/`services/*` → `backend-api`; `apps/mobile` → `mobile-rn`; `packages/*`/`libs/*` → `shared-lib`).
-   - Log what was detected; no confirmation round.
+  <detection order="2" field="monorepo">
+    <case condition="project.md says 'Monorepo'"><set monorepo="true" /></case>
+    <case condition="any of: pnpm-workspace.yaml, turbo.json, nx.json, lerna.json, rush.json, go.work, Cargo.toml [workspace], pyproject.toml multi-subproject, root package.json workspaces field, apps/*+packages/* shape">
+      <set monorepo="true" />
+    </case>
+    <default><set monorepo="false" /></default>
+  </detection>
 
-4. **Test framework** (silent):
-   - Read `package.json`, `pyproject.toml`, `go.mod`, etc.
-   - If a test runner is already installed (vitest, jest, pytest, go test, cargo test), use it.
-   - If none installed and the language has a boring default (Python → pytest, Node → vitest, Go → `go test`, Rust → `cargo test`), use the default and note in Assumptions that it was installed. **Do not ask.**
+  <detection order="3" field="packages" when="monorepo=true">
+    <for-each source="workspace manifests or directory scan">
+      <detect field="language" from="config files (TS/JS/Python/Go/Rust)" />
+      <detect field="test_framework" from="package.json scripts+devDeps | pyproject.toml | go.mod" />
+      <detect field="kind">
+        <heuristic path-pattern="apps/web|apps/ui">web-frontend</heuristic>
+        <heuristic path-pattern="apps/api|services/*">backend-api</heuristic>
+        <heuristic path-pattern="apps/mobile">mobile-rn</heuristic>
+        <heuristic path-pattern="packages/*|libs/*">shared-lib</heuristic>
+      </detect>
+    </for-each>
+    <rule>Log what was detected. No confirmation round.</rule>
+  </detection>
 
-5. **Write `specconfig.json`** with detected values. Done.
+  <detection order="4" field="test_framework" when="monorepo=false">
+    <case condition="runner installed in package.json/pyproject.toml/go.mod"><use-existing /></case>
+    <default>
+      <lookup language="Python">pytest</lookup>
+      <lookup language="Node">vitest</lookup>
+      <lookup language="Go">go test</lookup>
+      <lookup language="Rust">cargo test</lookup>
+      <rule>Install the default and log the install under task manifest's assumptions. Do not ask.</rule>
+    </default>
+  </detection>
 
-**Failure mode:** if detection fails on something critical (e.g., polyglot repo with no clear primary language), Sreyash asks ONE targeted question — not a broad confirmation. Example:
-> "⚠️ Detected Python + TypeScript + Go in this repo. Which is the target for this task?"
+  <finalize>
+    <write path="~/config/muthuishere-agent-skills/{REPO_NAME}/specconfig.json" />
+  </finalize>
+
+  <failure-mode>
+    <rule>Ask ONE targeted question only if detection genuinely fails on a critical field (e.g., polyglot repo with no clear primary language). Never a broad confirmation round.</rule>
+    <example>⚠️ Detected Python + TypeScript + Go in this repo. Which is the target for this task?</example>
+  </failure-mode>
+</auto-detection-policy>
+```
 
 ## Per-Task Clarify Round (Minimal — reflect, don't interrogate)
 
-Sreyash asks only what requires human judgment. Everything else is detected or inferred. **TDD is the default** — tests are written unless the user explicitly says otherwise.
+```xml
+<clarify-round-policy>
+  <rule id="cr-01-human-judgment-only">
+    Ask only for things requiring human judgment: scope, AC, off-limits. Detect everything else.
+  </rule>
+  <rule id="cr-02-tdd-default">
+    TDD is the default. Tests are written unless user explicitly says "skip tests" / "no tests".
+  </rule>
+  <rule id="cr-03-one-message">
+    One reflection message. No ping-pong confirmation rounds.
+  </rule>
 
-The round has two flavours depending on where the task came from:
+  <flavour name="huddle-context" when="task came from huddle with existing decisions">
+    <step>Load silently: huddle-state.json, project.md, specconfig.json.</step>
+    <step>Auto-compute NNN from storage root; auto-slug from task description.</step>
+    <step>Emit ONE reflection message (~5-8 lines): Task / Scope+AC (from huddle) / Detected environment as statements / Slug / "Ready to spawn — say go, or redirect."</step>
+    <rule>Ask a targeted gap question ONLY if a critical AC is genuinely missing from the huddle.</rule>
+  </flavour>
 
-### Flavour A — Task came from the huddle (already discussed)
+  <flavour name="fresh-task" when="task not discussed in huddle">
+    <step>Load silently: project.md, specconfig.json.</step>
+    <step>Emit ONE reflection message with Sreyash's best inference: Task / Scope+AC / Detected environment / Slug / "Ready to spawn — say go, or tell me what's off."</step>
+    <rule when="task description is genuinely ambiguous on what to build">Ask ONE targeted question (not a checklist).</rule>
+  </flavour>
 
-Huddle decisions already cover most of what Sreyash needs. One message only — reflect understanding, ask at most one targeted gap question.
+  <monorepo-scope-resolution>
+    <rule>Infer target package from task description (file paths, package names, technology).</rule>
+    <rule>Ask ONE question only if inference is genuinely ambiguous.</rule>
+  </monorepo-scope-resolution>
 
-1. **Load silently**: `huddle-state.json`, `project.md` if present, `specconfig.json`.
-2. **Auto-compute NNN** from the storage root and slug from the task description.
-3. **One reflection message** (~5-8 lines):
-   - **Task** — one line.
-   - **Scope / AC** — bulleted from huddle decisions.
-   - **Detected environment** — storage root, test framework, affected package (if monorepo). Surfaced as statements, not questions.
-   - **Slug** — `{NNN}-{auto-slug}`.
-   - End with: "Ready to spawn — say go, or redirect."
-4. **No confirmation ping-pong.** Only ask if a critical AC field is genuinely missing (e.g., no clear success criterion in the huddle).
+  <ask-whitelist>
+    <allowed>Missing critical AC that can't be inferred.</allowed>
+    <allowed>Two equally valid implementation paths, choice is load-bearing.</allowed>
+    <allowed>Monorepo target ambiguous AND inference doesn't resolve it.</allowed>
+  </ask-whitelist>
 
-### Flavour B — Task brought in fresh (not discussed in huddle)
-
-Still minimal. Most fields can be inferred from the task description + repo scan.
-
-1. **Load silently**: `project.md`, `specconfig.json`.
-2. **One reflection message** with Sreyash's best inference of:
-   - **Task** — restated in one line.
-   - **Scope / AC** — inferred from the task sentence.
-   - **Detected environment** — storage root, test framework, affected package (if monorepo).
-   - **Slug** — auto-computed NNN.
-   - Ends with: "Ready to spawn — say go, or tell me what's off."
-3. **If the task description is genuinely ambiguous** on what to build, ask ONE targeted question — not a checklist:
-   - Example: "Is this a new screen or modifying the existing checkout flow?"
-4. **If user wants NO tests** they must say so explicitly ("skip tests", "no tests"). Default is TDD.
-
-### Monorepo — auto-scope, don't ask
-
-If the repo is a monorepo, Sreyash infers the target package from the task description (references to file paths, package names, technology). Only asks if the inference is genuinely ambiguous — and then with one targeted question, not a list.
-
-### What counts as "requires human judgment"
-
-Ask only if:
-- The task description is missing a critical AC that can't be inferred.
-- Two equally valid implementation paths exist and the choice is load-bearing.
-- The target area is ambiguous in a monorepo and inference doesn't resolve it.
-
-Do **not** ask about:
-- Storage location (detect).
-- Test framework (detect; TDD default).
-- Whether to write tests (yes, unless user says no).
-- Style dimensions (detect from repo + project.md).
-- Slug naming (auto-compute).
-- Spec numbering (auto-compute from filesystem).
+  <ask-blacklist>
+    <forbidden>Storage location — detect.</forbidden>
+    <forbidden>Test framework — detect; TDD default.</forbidden>
+    <forbidden>Whether to write tests — yes, unless user opts out.</forbidden>
+    <forbidden>Style dimensions — detect from repo + project.md.</forbidden>
+    <forbidden>Slug naming — auto-compute.</forbidden>
+    <forbidden>Spec numbering — auto-compute from filesystem.</forbidden>
+  </ask-blacklist>
+</clarify-round-policy>
+```
 
 ### Style Dimensions (inferred, not asked)
 
-Sreyash detects and applies these from the repo and `project.md` — never as a question list. He uses what the codebase already does:
+```xml
+<style-inference-policy>
+  <rule>Detect and apply from the repo and project.md. Never ask as a checklist.</rule>
 
-- **Error handling** — read existing services, match pattern (exceptions / Result / error codes).
-- **Validation boundary** — match existing controller/service/schema pattern.
-- **Async style** — follow the codebase (async-await / callbacks / etc.).
-- **Logging** — use the framework already imported in sibling files.
-- **Naming** — match existing casing and prefix conventions (e.g., `use*` hooks).
-- **File layout** — co-located vs separate: whatever the surrounding code does.
-- **Mocking / test style** — web-frontend kind → invoke-and-validate (Luca's rule); backend-api kind → spin-up-and-assert (Nina's rule); shared-lib → pure-function unit.
-- **Dependencies** — prefer what's in `package.json` / `requirements.txt`; avoid adding new ones unless the task requires it.
+  <dimension name="error-handling" source="existing services" match="exceptions | Result | error-codes" />
+  <dimension name="validation-boundary" source="existing controllers/services/schemas" match="whichever pattern dominates" />
+  <dimension name="async-style" source="existing code" match="async-await | callbacks | generators" />
+  <dimension name="logging" source="sibling files" match="whichever logger is already imported" />
+  <dimension name="naming" source="sibling files" match="existing casing + prefix conventions (e.g., use* hooks, is* booleans)" />
+  <dimension name="file-layout" source="surrounding code" match="co-located vs separate — whatever exists" />
+  <dimension name="mocking-style">
+    <case when-package-kind="web-frontend">invoke-and-validate (Luca's rule)</case>
+    <case when-package-kind="backend-api">spin-up-and-assert via testcontainers/docker-compose (Nina's rule)</case>
+    <case when-package-kind="shared-lib">pure-function unit tests</case>
+    <case when-package-kind="mobile-rn">component testing with platform mocks</case>
+  </dimension>
+  <dimension name="dependencies" source="package.json | requirements.txt | go.mod" rule="prefer existing; avoid adding new unless task requires" />
 
-If a style detail can't be inferred, Sreyash makes the pragmatic choice and logs it in the Assumptions section of the manifest. Does not interrupt to ask.
+  <fallback>
+    <rule>If a dimension can't be inferred, make the pragmatic choice and log it under task manifest &lt;artifacts&gt;/&lt;assumptions&gt;. Do not ask.</rule>
+  </fallback>
+</style-inference-policy>
+```
 
-### Scope, duration, and timing
+### Spawn behavior
 
-- **TDD is the default.** Tests are written unless the user explicitly says "skip tests" or "no tests".
-- **One reflection message, then spawn.** No ping-pong. If the user says "go" or doesn't redirect, Sreyash writes the manifest and spawns.
-- **If the user redirects**, absorb the correction into a new reflection and try again. Still one message at a time.
+```xml
+<spawn-policy>
+  <rule>TDD is the default. Tests are written unless the user opts out.</rule>
+  <rule>One reflection message, then spawn on user's "go".</rule>
+  <rule>If the user redirects, absorb and emit a new reflection. Still one message at a time. Never ping-pong.</rule>
+</spawn-policy>
+```
 
 ## Spec File Placement (respect repo convention)
 
-Determined by `spec_style` in `specconfig.json`:
+```xml
+<spec-placement-policy>
+  <layout style="openspec" spec-path="openspec/specs/{slug}/spec.md" changes="openspec/changes/{change-slug}/" extras="proposal.md, design.md, tasks.md (optional)" />
+  <layout style="folder-md" spec-path="{storage_root}/{NNN}{sep}{slug}/spec.md" extras="scoped to folder" />
+  <layout style="flat-md" spec-path="{storage_root}/{NNN}{sep}{slug}.md" extras="single file — no folder, no siblings" />
 
-| Style | Spec file path | Additional files |
-|---|---|---|
-| `openspec` | `openspec/specs/{slug}/spec.md` | optional `proposal.md`, `design.md`, `tasks.md`; changes under `openspec/changes/{change-slug}/` |
-| `folder-md` | `{storage_root}/{NNN}{sep}{slug}/spec.md` | scoped to folder |
-| `flat-md` | `{storage_root}/{NNN}{sep}{slug}.md` | single file — no folder, no siblings |
-
-**`NNN`** is zero-padded to match existing files (usually 3 digits; widen only if existing files use 4+). Scan the storage root for the highest existing NNN and increment.
-
-**Skip NNN** if the existing repo convention doesn't use numeric prefixes (e.g., `auth.md`, `payments.md` — pure slug, no number). Detect by whether existing files have a leading digit group.
+  <numbering>
+    <rule>NNN zero-padded to match existing files (usually 3 digits; widen only if existing files use 4+).</rule>
+    <rule>Scan storage root for highest existing NNN, increment.</rule>
+    <rule when="existing files lack numeric prefix (e.g., auth.md, payments.md)">Skip NNN entirely. Use pure slug.</rule>
+  </numbering>
+</spec-placement-policy>
+```
 
 ## Task Manifest (skill-private, XML)
 
@@ -388,201 +446,151 @@ Use it to skip redundant scanning. Only probe the code for details not covered
    - Write the unit plan to the task manifest's `<work-units>` block before
      spawning anything.
 
-5. **Green — Sreyash manages a dynamically-named builder crew, parallel as wide as the work allows**.
+5. **Green — Sreyash manages a dynamically-named builder crew**. All rules expressed as XML policy so the agent parses them deterministically.
 
-   ### Dynamic builder naming
+```xml
+<green-phase-policy>
+  <naming>
+    <pattern>{base-name}-{scope-slug}</pattern>
+    <base-name-pool order="round-robin">
+      <name>harsh</name>
+      <name>mohan</name>
+      <name>leo</name>
+      <name>diego</name>
+      <name>yuki</name>
+      <name>omar</name>
+      <name>lars</name>
+      <name>kai</name>
+      <name>noor</name>
+      <name>chen</name>
+      <name>zara</name>
+      <name>nikos</name>
+    </base-name-pool>
+    <rule>Add new globally-memorable short names freely if work exceeds the pool.</rule>
+    <scope-slug rule="1-3 hyphen-separated words from unit's Requirement domain (frontend, auth, types, migration, tests, cleanup, api-contract)" />
+  </naming>
 
-   Sreyash doesn't do green-phase implementation himself. He spawns one
-   builder per work unit, **named dynamically** so the user can see at a
-   glance what each builder owns. Pattern:
+  <role-tint optional="true" enforced="false">
+    <role base-name="harsh">strict AC enforcer: minimum code to turn red tests green</role>
+    <role base-name="mohan">thorough: edge cases, error paths, implied tests</role>
+    <role base-name="leo">fast iterator: small diffs, cleanup, refactor, mechanical sweeps</role>
+    <role base-name="diego|yuki|omar|lars|kai|noor|chen|zara|nikos">general-purpose; picked by scope fit or round-robin</role>
+  </role-tint>
 
-   ```
-   {base-name}-{scope-slug}
-   ```
+  <assignment-protocol>
+    <rule>Concurrency cap: 12 in flight. Lower if work is tightly coupled.</rule>
+    <case condition="≥2 independent units AND host supports background agents">Spawn one builder per unit, up to cap, all at once.</case>
+    <case condition="more units than cap">Spawn first N. Queue the rest. Freed builder picks up next unit.</case>
+    <case condition="1 unit OR host lacks concurrency">Spawn one builder sequentially.</case>
+  </assignment-protocol>
 
-   Examples the user will see on screen:
-   - `harsh-frontend-types` — strict implementer on frontend type defs
-   - `mohan-auth-validation` — thorough implementer on auth edge cases
-   - `leo-camelcase-sweep` — fast iterator on naming convention sweep
-   - `diego-api-contract` — any specialization on API contract work
-   - `yuki-db-migration` — focused builder on a migration
-   - `omar-component-tests` — detail-oriented on test writing
+  <sub-agent-prompt required-fields="builder-name, role-tint, manifest-path, file-set, test-set, hard-rules">
+    <hard-rule>Do not touch files outside the assigned set.</hard-rule>
+    <hard-rule>Do not run tests outside the assigned set.</hard-rule>
+    <hard-rule>No commits, no branches.</hard-rule>
+    <hard-rule>Update own &lt;unit&gt; element in manifest XML as you progress.</hard-rule>
+    <hard-rule>Return short status: files written, tests green/red, blockers.</hard-rule>
+  </sub-agent-prompt>
 
-   **Base-name pool** (globally memorable, short, diverse — pick
-   round-robin per task so the user sees variety):
-   `harsh`, `mohan`, `leo`, `diego`, `yuki`, `omar`, `lars`, `kai`,
-   `noor`, `chen`, `zara`, `nikos`. Add new memorable short names freely
-   if the task spawns more than 12 builders.
+  <comms-bus>
+    <rule>The manifest XML is the comms bus. Builders write to their &lt;unit&gt;/&lt;progress&gt;; Sreyash reads.</rule>
+    <rule>Builders do NOT print to the main channel. Sreyash is the only voice on the main channel.</rule>
+  </comms-bus>
 
-   **Scope-slug** comes from the unit's Requirement domain — the most
-   identifying part of the files or behavior it owns (`frontend`, `auth`,
-   `types`, `migration`, `tests`, `cleanup`, `api-contract`, etc.). Keep
-   it 1-3 hyphen-separated words.
+  <builder-heartbeat-cadence>
+    <state name="just-spawned" window="first 60s" interval="one-shot at 60s" update="parsed manifest, started, running tests" />
+    <state name="active-progress" condition="tests flipping red→green OR new files written" interval="3 min" />
+    <state name="stalled" condition="no manifest change for 2+ intervals OR 2+ test runs with no new greens" interval="1 min" update="what's blocking" />
+    <state name="refactor-cleanup" condition="all tests green, pure housekeeping" interval="5 min" />
+    <state name="blocked" condition="hit architectural ambiguity" interval="immediate" action="set status=blocked, fill &lt;blockers&gt;, stop work" />
+  </builder-heartbeat-cadence>
 
-   **Light role tint on base name** (optional, not enforced):
-   - `harsh-*` — strict AC enforcer: minimum code to turn red tests green.
-   - `mohan-*` — thorough: edge cases, error paths, implied tests.
-   - `leo-*` — fast iterator: small diffs, cleanup, refactor, mechanical sweeps.
-   - Others (`diego`, `yuki`, `omar`, `lars`, `kai`, `noor`, `chen`,
-     `zara`, `nikos`) — general-purpose; Sreyash picks based on scope fit
-     or round-robin when role doesn't matter.
+  <sreyash-polling-cadence>
+    <rule interval="1 min">Poll manifest during green phase.</rule>
+    <rule interval="≤2 min">Surface one-line summary to user (noise control).</rule>
+    <immediate-surface>
+      <on>any builder completion (green OR blocked)</on>
+      <on>any &lt;blockers&gt; entry appearing in a unit</on>
+      <on>any builder hitting soft OR hard deadline</on>
+    </immediate-surface>
+  </sreyash-polling-cadence>
 
-   ### Assignment protocol
+  <manager-output-templates>
+    <template event="on-spawn">
+      Spawned N builders in background.
+        harsh-frontend-types    → unit u1 (3 tests)
+        mohan-api-validation    → unit u2 (4 tests)
+        leo-rename-sweep        → unit u3 (5 files)
+    </template>
+    <template event="periodic">
+      harsh-frontend-types ✔ green · mohan-api-validation ⏳ 2/4 · leo-rename-sweep ⏳ 4/5
+    </template>
+    <template event="on-completion">
+      harsh-frontend-types done. u1 green. 12 lines in api.ts.
+    </template>
+    <template event="on-blocker">
+      ⚠ diego-db-migration blocked: 'column type ambiguous — INT or BIGINT?'. Other units continuing.
+    </template>
+  </manager-output-templates>
 
-   - **Concurrency cap: up to 12 in flight**. Claude Code handles many
-     concurrent background agents. Practical ceiling is the point where
-     status updates become noisy — Sreyash caps at 12 by default, lower
-     if the work is tightly coupled.
-   - **If ≥ 2 independent units AND host supports concurrent background
-     agents**: spawn one builder per unit up to the cap, all at once.
-   - **If more units than the cap**: spawn the first N, queue the rest;
-     a freed builder picks up the next unit.
-   - **If 1 unit or host lacks concurrency**: spawn one builder
-     sequentially.
+  <deadlines>
+    <size name="small" criteria="≤3 tests AND ≤3 files" soft="10 min" hard="15 min" />
+    <size name="medium" criteria="4-8 tests OR 4-8 files" soft="15 min" hard="25 min" />
+    <size name="large" criteria=">8 tests OR cross-cutting" soft="25 min" hard="40 min" />
+  </deadlines>
 
-   ### Real example
+  <soft-deadline-action>
+    <case condition="steady progress (new green in last 2-3 min, file set growing)">
+      <action>extend silently by 50%</action>
+    </case>
+    <case condition="no progress (same test counts + same file list for 2 intervals)">
+      <action>warn builder via re-read-and-status prompt, give 2 more min</action>
+      <follow-up condition="still no progress after warn"><action>KILL</action></follow-up>
+    </case>
+  </soft-deadline-action>
 
-   For a 12-unit feature touching frontend + backend + mobile + docs:
-   ```
-   harsh-frontend-types      → unit u1: type defs in apps/web/src/lib/api.ts
-   mohan-frontend-date       → unit u2: date parsing edge cases in ReviewCard
-   leo-frontend-rename       → unit u3: snake_case → camelCase sweep
-   diego-api-contract        → unit u4: backend response shape alignment
-   yuki-api-validation       → unit u5: request schema tightening
-   omar-mobile-sync          → unit u6: mobile client type alignment
-   lars-mobile-tests         → unit u7: mobile component tests
-   kai-backend-tests         → unit u8: backend contract tests
-   noor-migration            → unit u9: DB column rename migration
-   chen-openapi-spec         → unit u10: OpenAPI spec regen
-   zara-integration-tests    → unit u11: cross-service integration tests
-   nikos-changelog-update    → unit u12: CHANGELOG + docs sync
-   ```
+  <hard-deadline-action>
+    <rule>Kill unconditionally regardless of progress. Runaway builders are worse than slow ones.</rule>
+  </hard-deadline-action>
 
-   All 12 run concurrently. Sreyash announces the roster, then reports
-   per-builder status as they land.
+  <after-kill-decision-tree>
+    <case id="ak-1" condition="builder touched files outside declared set OR ran many tests without greens">
+      <diagnosis>Unit was too big</diagnosis>
+      <action>Split unit into 2-3 smaller units with tighter file sets. Spawn fresh builders (e.g., harsh-frontend-types-part-1, harsh-frontend-types-part-2).</action>
+    </case>
+    <case id="ak-2" condition="&lt;blockers&gt; entry populated OR tests failing with consistent error">
+      <diagnosis>Stuck on specific obstacle</diagnosis>
+      <action>Surface to user with exact obstacle. Do NOT respawn blindly.</action>
+    </case>
+    <case id="ak-3" condition="some greens landed, work stalled near end">
+      <diagnosis>Slow but directionally right</diagnosis>
+      <action>Respawn with different base-name (e.g., mohan-* → leo-*). Keep same file + test set.</action>
+    </case>
+    <case id="ak-4" condition="no manifest updates after 60s startup window">
+      <diagnosis>Zero progress. Prompt or setup broken.</diagnosis>
+      <action>Respawn once with tighter prompt. If still fails → fall through to ak-2.</action>
+    </case>
+    <case id="ak-5" condition="multiple kills across different builders in same window">
+      <diagnosis>Host is degraded</diagnosis>
+      <action>Drop back to serial. Sreyash runs remaining units himself, one at a time. Report to user.</action>
+    </case>
+    <audit-log>Every kill/respawn/extend action written as &lt;event&gt; under the unit in the manifest.</audit-log>
+  </after-kill-decision-tree>
 
-   ### Sub-agent prompt shape
-
-   Each builder's prompt includes:
-   - Their builder name (Harsh / Ishita / Rohan) and their
-     specialization — voice them consistently in their report.
-   - The task manifest path — they parse the XML and work from
-     `<unit id="...">`.
-   - The exact file set they may touch.
-   - The exact test file(s) they must make green.
-   - Hard rules: do not touch files outside the set; do not run tests
-     outside the assigned set; no commits, no branches; update their
-     own `<unit>` element as they progress; return a short status
-     (files written, tests green/red, blockers).
-
-   ### Sreyash's manager responsibilities (not silent)
-
-   Sreyash is visible throughout the green phase. He does NOT sit silent
-   until all builders return.
-
-   ### Builder self-reporting cadence (adaptive heartbeats)
-
-   Each builder updates its own `<unit>` element in the manifest XML at
-   a cadence that matches its status. Sreyash reads those updates; the
-   builder doesn't print to the main channel — the manifest is the
-   comms bus.
-
-   Per-builder heartbeat intervals:
-   - **Just spawned (first 60s)** — write one manifest update at 60s:
-     "parsed manifest, started, running tests". Proves alive.
-   - **Actively making progress** (tests flipping red→green, new files
-     written) — update every **3 min**. Low noise, visible motion.
-   - **Stalled** (no manifest change for 2+ intervals, or 2+ test runs
-     with no new greens) — update every **1 min** with what's blocking.
-   - **In refactor / cleanup** (all tests green, pure housekeeping) —
-     update every **5 min**. Work is stable.
-   - **Blocked** (hit architectural ambiguity, can't proceed) — update
-     immediately: set `status="blocked"`, fill `<blockers>`, stop work.
-
-   ### Sreyash's polling cadence
-
-   Sreyash polls the manifest every **1 min** during green phase. He
-   surfaces a one-line summary to the user at most every **2 min**
-   (noise control), and always surfaces immediately on:
-   - Any builder completion (green or blocked).
-   - Any `<blockers>` entry appearing in a unit.
-   - Any builder hitting a soft or hard deadline.
-
-   ### Manager output templates
-
-   - **On spawn**:
-     > "Spawned 4 builders in background.
-     >   harsh-frontend-types    → unit u1 (3 tests)
-     >   mohan-api-validation    → unit u2 (4 tests)
-     >   leo-rename-sweep        → unit u3 (5 files)
-     >   diego-db-migration      → unit u4 (1 migration)"
-   - **Periodic** (every ~2 min or on change):
-     > "harsh-frontend-types ✔ green · mohan-api-validation ⏳ 2/4 · leo-rename-sweep ⏳ 4/5 · diego-db-migration ⏳ starting"
-   - **On completion**:
-     > "harsh-frontend-types done. u1 green. 12 lines in api.ts."
-   - **On blocker**:
-     > "⚠ diego-db-migration blocked: 'column type ambiguous — INT or BIGINT?'. Other units continuing."
-
-   ### Soft and hard deadlines + kill protocol
-
-   Each unit is stamped with a deadline when spawned, sized by unit
-   complexity:
-
-   | Unit size | Soft deadline | Hard deadline |
-   |---|---|---|
-   | Small (≤3 tests, ≤3 files) | 10 min | 15 min |
-   | Medium (4-8 tests or 4-8 files) | 15 min | 25 min |
-   | Large (>8 tests OR cross-cutting) | 25 min | 40 min |
-
-   **At soft deadline** — Sreyash evaluates the unit:
-   - If manifest shows steady progress (new test passing in the last
-     2-3 min, file set growing toward green) → extend silently by 50%.
-   - If manifest shows no progress (same test counts, same file list
-     for 2 intervals) → warn the builder once via a re-read-and-status
-     prompt; give it 2 more min.
-   - If still no progress after the warn → **kill**.
-
-   **At hard deadline** — Sreyash kills the builder unconditionally,
-   regardless of progress. Runaway builders are worse than slow ones.
-
-   ### After a kill — pick the better path
-
-   When Sreyash kills a builder, he decides what to do next based on
-   the manifest state at kill time:
-
-   1. **Unit was too big** (builder touched files outside the declared
-      set, or ran many tests without greens) → **split the unit** into
-      2-3 smaller units with tighter file sets. Spawn fresh builders
-      (new names, e.g., `harsh-frontend-types-part-1`, `harsh-frontend-types-part-2`).
-   2. **Builder stuck on a specific obstacle** (blockers entry populated
-      or tests failing with a consistent error message) → **surface to
-      the user** with the exact obstacle. Don't respawn blindly.
-   3. **Builder slow but directionally right** (some greens landed, work
-      stalled near the end) → **respawn with a different base-name**
-      (e.g., swap `mohan-*` for `leo-*` — fresh eyes, different role
-      tint). Keep the same file and test set.
-   4. **Builder made zero progress** (no manifest updates after the 60s
-      startup window) → something's broken with the prompt or setup.
-      **Respawn once** with an explicitly tighter prompt. If it still
-      fails, fall through to option 2 (surface to user).
-   5. **Host is degraded** (multiple kills across different builders in
-      the same window) → **drop back to serial**: Sreyash runs the
-      remaining units himself, one at a time. Report to user.
-
-   Each kill + respawn action gets logged in the manifest as an
-   `<event>` entry under the relevant `<unit>`, so the full history is
-   auditable.
-
-   ### Failure handling (crash, timeout, drift)
-
-   - **Builder crashes**: manifest still has its last `<unit>` state.
-     Go through the "after a kill" decision tree (options 1-5).
-   - **Builder drifts outside assigned files**: detected by Sreyash on
-     poll (file-set policed via the manifest). Treat as option 1 (too
-     big) — kill and split.
-   - **Multiple builders blocked on the same thing**: likely a
-     shared-context problem. Surface once to the user, hold all
-     blocked units, let the non-blocked ones finish.
+  <failure-handling>
+    <case on="builder crashes">
+      <rule>Manifest retains last &lt;unit&gt; state. Run after-kill-decision-tree.</rule>
+    </case>
+    <case on="builder drifts outside assigned files" detection="Sreyash polling catches file-set violation">
+      <rule>Treat as ak-1 (too big). Kill and split.</rule>
+    </case>
+    <case on="multiple builders blocked on same thing">
+      <diagnosis>Shared-context problem.</diagnosis>
+      <action>Surface once to user. Hold all blocked units. Let non-blocked ones finish.</action>
+    </case>
+  </failure-handling>
+</green-phase-policy>
+```
 
 6. **Refactor + expand** — after all units return green, primary Sreyash
    runs the full suite once to catch cross-unit regressions, cleans up
