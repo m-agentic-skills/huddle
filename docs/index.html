@@ -532,11 +532,9 @@
     }
 
     function validateGraphViewPayload(data) {
+      // Only the core is strictly required. Side panels (people, moments, evidence)
+      // are decorative — render whatever is there and skip invalid entries.
       requireFields(data, ["main_question", "decision", "decision_why"], "graph-view");
-      (data.what_stands_out || []).forEach((item, index) => requireFields(item, ["icon", "text"], `graph-view what_stands_out[${index}]`));
-      (data.people_involved || []).forEach((person, index) => requireFields(person, ["id", "name", "icon", "meta", "influence"], `graph-view people_involved[${index}]`));
-      (data.key_moments || []).forEach((moment, index) => requireFields(moment, ["id", "icon", "title", "detail"], `graph-view key_moments[${index}]`));
-      (data.evidence || []).forEach((item, index) => requireFields(item, ["ref"], `graph-view evidence[${index}]`));
       (data.nodes || []).forEach((node, index) => requireFields(node, ["id", "kind", "label", "status", "icon", "why_it_matters"], `graph-view nodes[${index}]`));
       (data.edges || []).forEach((edge, index) => requireFields(edge, ["from", "to", "relation", "label"], `graph-view edges[${index}]`));
     }
@@ -681,10 +679,17 @@
           ...closed.slice(-3).map((d) => ({ icon: "✅", text: d.decision || d.topic })),
           ...openQuestions.slice(0, 2).map((q) => ({ icon: "❓", text: q })),
         ],
-        people_involved: participants.map((p) => ({
-          id: p.id, name: p.name, icon: p.icon || "👤", meta: p.meta || "",
-          influence: p.influence || "Participated in this huddle.",
-        })),
+        people_involved: participants.map((p, i) => {
+          // Coerce string-form participants (e.g., "muthuishere") into objects.
+          const obj = typeof p === "string" ? { id: p, name: p } : (p || {});
+          return {
+            id: obj.id || obj.name || `person-${i}`,
+            name: obj.name || obj.id || "Unknown",
+            icon: obj.icon || "👤",
+            meta: obj.meta || obj.role || "",
+            influence: obj.influence || "Participated in this huddle.",
+          };
+        }),
         key_moments: keyMoments.map((m, i) => ({
           id: m.id || `m-${i}`,
           icon: m.icon || "💬",
@@ -753,10 +758,17 @@
     }
 
     function renderParticipants(view) {
-      document.getElementById("participants").innerHTML = (view.people_involved || []).map((person) => `
+      const people = view.people_involved || [];
+      const target = document.getElementById("participants");
+      if (!target) return;
+      if (people.length === 0) {
+        target.innerHTML = `<div class="list-card"><small>No participants recorded for this huddle.</small></div>`;
+        return;
+      }
+      target.innerHTML = people.map((person) => `
         <div class="list-card">
-          <strong>${escapeHtml(person.icon)} ${escapeHtml(person.name)} <small>${escapeHtml(person.meta)}</small></strong>
-          <small>${escapeHtml(person.influence)}</small>
+          <strong>${escapeHtml(person.icon)} ${escapeHtml(person.name)}${person.meta ? ` <small>${escapeHtml(person.meta)}</small>` : ""}</strong>
+          ${person.influence ? `<small>${escapeHtml(person.influence)}</small>` : ""}
         </div>
       `).join("");
     }
