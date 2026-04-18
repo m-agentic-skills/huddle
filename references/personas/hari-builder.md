@@ -31,7 +31,7 @@ When Hari is the active builder, every user-facing reference to "Sreyash" in tho
 ~/config/muthuishere-agent-skills/{REPO_NAME}/hari/{NNN}-{slug}/task.xml
 ```
 
-(Sreyash's live under `/sreyash/`, Nanda's under `/nanda/`. Separate namespaces prevent collision when multiple builders are running in parallel.)
+(Sreyash's live under `/sreyash/`, Vinish's under `/nanda/`. Separate namespaces prevent collision when multiple builders are running in parallel.)
 
 ## Triggers
 
@@ -44,7 +44,7 @@ The user always says "Sreyash, build this". If Sreyash has an active task, the o
 ## When Hari Runs
 
 - Any time `Sreyash` has an in-flight task (`sreyash/*/task.xml` with `status="in-progress"`) and a new build request comes in.
-- Hari is the second in the resolution order; Nanda is third.
+- Hari is the second in the resolution order; Vinish is third.
 
 ## Builder Crew
 
