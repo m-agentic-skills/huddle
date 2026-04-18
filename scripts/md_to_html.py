@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
-"""Bundle a huddle note + huddle-state.json and open the static review page.
+"""Bundle a huddle note + huddle-state.json and open the review page.
 
 Usage:
     python md_to_html.py <file.md> [base_url]
+
+Resolution order for base_url (first wins):
+  1. CLI arg (sys.argv[2]) if provided
+  2. `graph_review_url` field in ~/config/muthuishere-agent-skills/userconfig.json
+  3. DEFAULT_BASE_URL constant below
 
 Reads huddle-state.json from the same directory as the markdown file.
 The graph view is derived client-side in index.html from decisions[].
@@ -17,7 +22,22 @@ import sys
 import webbrowser
 from pathlib import Path
 
-DEFAULT_BASE_URL = "https://m-agentic-skills.github.io/huddle/index.html"
+DEFAULT_BASE_URL = "https://muthuishere-agent-skills.github.io/huddle/index.html"
+USER_CONFIG_PATH = Path.home() / "config" / "muthuishere-agent-skills" / "userconfig.json"
+
+
+def resolve_base_url(cli_arg: str | None) -> str:
+    if cli_arg:
+        return cli_arg
+    if USER_CONFIG_PATH.exists():
+        try:
+            cfg = json.loads(USER_CONFIG_PATH.read_text(encoding="utf-8"))
+            url = cfg.get("graph_review_url")
+            if url:
+                return url
+        except (json.JSONDecodeError, OSError):
+            pass
+    return DEFAULT_BASE_URL
 
 
 def encode_bundle(bundle: dict) -> str:
@@ -32,7 +52,8 @@ def main() -> int:
         return 1
 
     md_path = Path(sys.argv[1]).expanduser().resolve()
-    base_url = sys.argv[2] if len(sys.argv) >= 3 else DEFAULT_BASE_URL
+    cli_arg = sys.argv[2] if len(sys.argv) >= 3 else None
+    base_url = resolve_base_url(cli_arg)
 
     if not md_path.exists():
         print(f"Error: Markdown file not found: {md_path}", file=sys.stderr)

@@ -422,8 +422,17 @@
 
       <nav class="tabs" aria-label="Huddle views">
         <button class="tab active" data-view="graph-view">Conversation graph</button>
+        <button class="tab" data-view="timeline-view">Timeline</button>
         <button class="tab" data-view="spec-view">Spec</button>
       </nav>
+
+      <section id="timeline-view" class="view">
+        <article class="panel">
+          <h2>📖 Session narrative</h2>
+          <p>Key moments in the order they happened — the story of what changed and why.</p>
+          <ol id="timeline-full" style="list-style:none;padding:0;margin:24px 0 0;display:flex;flex-direction:column;gap:16px;"></ol>
+        </article>
+      </section>
 
       <section id="graph-view" class="view active">
         <section class="summary-grid">
@@ -486,6 +495,9 @@
                       <path d="M6 6l12 12"></path><path d="M18 6L6 18"></path>
                     </svg>
                   </button>
+                  <button id="graph-zoom-in" class="graph-button icon-only" type="button" title="Zoom in" aria-label="Zoom in" style="font-weight:700;font-size:18px;line-height:1;">+</button>
+                  <button id="graph-zoom-out" class="graph-button icon-only" type="button" title="Zoom out" aria-label="Zoom out" style="font-weight:700;font-size:18px;line-height:1;">−</button>
+                  <button id="graph-reset" class="graph-button icon-only" type="button" title="Reset zoom" aria-label="Reset zoom" style="font-weight:600;font-size:11px;line-height:1;">1:1</button>
                   <button id="graph-fit" class="graph-button icon-only" type="button" title="Fit graph back" aria-label="Fit graph back">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <rect x="7.4" y="7.2" width="9.2" height="9.4" rx="1.4"></rect>
@@ -715,11 +727,25 @@
     }
 
     function renderTimeline(view) {
-      document.getElementById("timeline").innerHTML = (view.key_moments || []).map((item) => `
+      const items = view.key_moments || [];
+      document.getElementById("timeline").innerHTML = items.map((item) => `
         <div class="list-card">
           <strong>${escapeHtml(item.icon)} ${escapeHtml(item.title)}</strong>
           <small>${escapeHtml(item.detail)}</small>
         </div>
+      `).join("");
+      const full = document.getElementById("timeline-full");
+      if (full) full.innerHTML = items.map((item, i) => `
+        <li style="display:flex;gap:18px;align-items:flex-start;">
+          <div style="flex:0 0 48px;display:flex;flex-direction:column;align-items:center;">
+            <div style="width:40px;height:40px;border-radius:50%;background:#fff;border:2px solid #cbd5e1;display:flex;align-items:center;justify-content:center;font-size:20px;">${escapeHtml(item.icon)}</div>
+            ${i < items.length - 1 ? '<div style="flex:1;width:2px;background:#cbd5e1;min-height:24px;margin-top:4px;"></div>' : ''}
+          </div>
+          <div style="flex:1;padding-bottom:12px;">
+            <strong style="display:block;font-size:16px;margin-bottom:6px;">${escapeHtml(item.title)}</strong>
+            <p style="margin:0;color:#475569;line-height:1.55;">${escapeHtml(item.detail)}</p>
+          </div>
+        </li>
       `).join("");
     }
 
@@ -894,6 +920,7 @@
       const cy = cytoscape({
         container: document.getElementById("cy"),
         elements: buildElements(view),
+        userZoomingEnabled: false,
         layout: { name: "preset", padding: 28, fit: true, animate: false },
         style: [
           {
@@ -970,6 +997,19 @@
       });
       document.getElementById("graph-close").addEventListener("click", async () => {
         if (document.fullscreenElement) await document.exitFullscreen();
+      });
+      document.getElementById("graph-zoom-in").addEventListener("click", () => {
+        if (!cyInstance) return;
+        cyInstance.zoom({ level: cyInstance.zoom() * 1.25, renderedPosition: { x: cyInstance.width() / 2, y: cyInstance.height() / 2 } });
+      });
+      document.getElementById("graph-zoom-out").addEventListener("click", () => {
+        if (!cyInstance) return;
+        cyInstance.zoom({ level: cyInstance.zoom() * 0.8, renderedPosition: { x: cyInstance.width() / 2, y: cyInstance.height() / 2 } });
+      });
+      document.getElementById("graph-reset").addEventListener("click", () => {
+        if (!cyInstance) return;
+        cyInstance.zoom(1);
+        cyInstance.center();
       });
       document.getElementById("graph-fit").addEventListener("click", () => {
         fitGraph();
