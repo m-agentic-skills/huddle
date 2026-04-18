@@ -48,9 +48,11 @@ That's not an answer. That's a tension. Tensions are where decisions get made.
 |---|---|---|---|
 | ⚡ | Sreyash | Background builder (primary) | You say "Sreyash, build X" and he's free |
 | 🛠️ | Hari | Sibling overflow | Sreyash is busy |
-| 🧰 | Vinish | Sibling overflow | Sreyash and Hari are both busy |
+| 🧰 | Harshvardhan | Sibling overflow | Sreyash and Hari are both busy |
 
-Hand a task: *"Sreyash, build the auth flow."* He writes an OpenSpec-style spec, runs TDD red→green→refactor, spawns up to 12 named parallel workers (harsh-frontend-types, mohan-api-validation, leo-rename-sweep, …), and returns with artifacts. If he's busy, Hari or Vinish picks up — the orchestrator tells you who.
+
+
+Hand a task: *"Sreyash, build the auth flow."* He writes an OpenSpec-style spec, runs TDD red→green→refactor, spawns up to 12 named parallel workers (harsh-frontend-types, mohan-api-validation, leo-rename-sweep, …), and returns with artifacts. If he's busy, Hari or Harshvardhan picks up — the orchestrator tells you who.
 
 ## Eight modes
 
@@ -87,4 +89,4 @@ Full walkthrough in [`usage.md`](./usage.md). Technical components: see [`SKILL.
 
 ## Inspired by
 
-https://github.com/bmad-code-org/BMAD-METHOD · OpenSpec.
+[BMad Method](https://bmadcode.com/) · [OpenSpec](https://openspec.org/).

@@ -1,17 +1,17 @@
-# Step: Sreyash Build (Orchestrator — shared by Sreyash, Hari, Vinish)
+# Step: Sreyash Build (Orchestrator — shared by Sreyash, Hari, Harshvardhan)
 
-Three builders share this orchestrator: **Sreyash** (primary), **Hari** (sibling), **Vinish** (sibling). Same flow, same phase files, same capabilities — distinct names so the user can run parallel builds without confusion. None talk in the huddle room.
+Three builders share this orchestrator: **Sreyash** (primary), **Hari** (sibling), **Harshvardhan** (sibling). Same flow, same phase files, same capabilities — distinct names so the user can run parallel builds without confusion. None talk in the huddle room.
 
 ```xml
 <builder-delegation-policy>
-  <rule>User always addresses "Sreyash". Hari and Vinish are on-call siblings behind Sreyash's name — not directly addressable.</rule>
+  <rule>User always addresses "Sreyash". Hari and Harshvardhan are on-call siblings behind Sreyash's name — not directly addressable.</rule>
 
   <resolution-order>
-    <step n="1">Scan in-flight builder tasks (look at sreyash/, hari/, vinish/ folders for manifests with status="in-progress").</step>
+    <step n="1">Scan in-flight builder tasks (look at sreyash/, hari/, harshvardhan/ folders for manifests with status="in-progress").</step>
     <step n="2">If Sreyash has no active task → identity = Sreyash.</step>
     <step n="3">Else if Hari has no active task → identity = Hari. Surface to user: "⚡ Sreyash is busy on {sreyash-current-slug}; 🛠️ Hari is picking this one up."</step>
-    <step n="4">Else if Vinish has no active task → identity = Vinish. Surface: "⚡ Sreyash and 🛠️ Hari are busy; 🧰 Vinish is picking this one up."</step>
-    <step n="5">Else (all three in flight) → ask {GIT_USER}: "All three builders are busy (Sreyash on {slug-a}, Hari on {slug-b}, Vinish on {slug-c}). Want to wait for the first to finish, or drop one of those tasks to free a slot?"</step>
+    <step n="4">Else if Harshvardhan has no active task → identity = Harshvardhan. Surface: "⚡ Sreyash and 🛠️ Hari are busy; 🧰 Harshvardhan is picking this one up."</step>
+    <step n="5">Else (all three in flight) → ask {GIT_USER}: "All three builders are busy (Sreyash on {slug-a}, Hari on {slug-b}, Harshvardhan on {slug-c}). Want to wait for the first to finish, or drop one of those tasks to free a slot?"</step>
   </resolution-order>
 
   <rule>The resolved identity is referred to as {BUILDER} throughout the phase files. All user-facing output — reflection messages, completion reports, "{BUILDER} back with results" header — uses {BUILDER}, not hardcoded "Sreyash".</rule>
@@ -82,7 +82,7 @@ Sreyash is **not a singleton**. Multiple Sreyash instances can run concurrently 
   <rule>User (or another persona) can trigger a new Sreyash while one or more are still in flight. The in-flight ones keep running.</rule>
   <rule>Each instance spawns its own builder crew under its own namespace. Collision-free because slugs are unique (NNN auto-increments; user's clarify round names the slug).</rule>
   <concurrent-cap>
-    <rule>Soft cap: 3 concurrent builder instances — naturally matches the three-name roster (Sreyash, Hari, Vinish). One task per builder name at a time.</rule>
+    <rule>Soft cap: 3 concurrent builder instances — naturally matches the three-name roster (Sreyash, Hari, Harshvardhan). One task per builder name at a time.</rule>
     <rule>Worst case per-task: up to 12 green-phase builders per task * 3 tasks = ~36 concurrent agents across the system.</rule>
     <rule>At the cap: main thread asks {GIT_USER} to confirm before spawning a 4th (requires reusing one of the three names for a 2nd parallel task).</rule>
   </concurrent-cap>

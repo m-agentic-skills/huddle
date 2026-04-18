@@ -98,7 +98,7 @@ Each one was designed around a real working scar — a failure they carry that s
 
 **Sreyash** ⚡ — Background Builder (primary). Not a discussion voice anymore — he's a build manager. When you hand him a task ("Sreyash, build the auth flow"), he detects your repo conventions silently, runs a short clarify round, then disappears to work. Inside, he's a manager: writes an OpenSpec-style spec grounded in real repo paths, lands red tests, then spawns up to 12 named background builders in parallel (harsh-frontend-types, mohan-api-validation, leo-rename-sweep, etc.) with adaptive heartbeats and kill/respawn protocols. Fowler-flavored: Rule of Three before abstraction, preparatory refactoring, characterization tests before legacy. Returns with a short report when done.
 
-**Hari** 🛠️ and **Vinish** 🧰 — Sibling background builders. Not user-addressable directly. When you say "Sreyash, build X" and Sreyash is already in flight on another task, the orchestrator delegates transparently and tells you who picked up:
+**Hari** 🛠️ and **Harshvardhan** 🧰 — Sibling background builders. Not user-addressable directly. When you say "Sreyash, build X" and Sreyash is already in flight on another task, the orchestrator delegates transparently and tells you who picked up:
 
 > "⚡ Sreyash is busy on {auth-flow}; 🛠️ Hari is picking this one up."
 
@@ -141,7 +141,7 @@ Sreyash runs a four-phase flow:
 
 No branches, no commits — Sreyash writes files on your current branch; you review with `git status`. TDD is default; say "skip tests" to opt out.
 
-Task manifest lives skill-private at `~/config/muthuishere-agent-skills/{repo}/sreyash/{NNN}-{slug}/task.xml` (or under `hari/` / `vinish/` when siblings pick up). Resumable across sessions.
+Task manifest lives skill-private at `~/config/muthuishere-agent-skills/{repo}/sreyash/{NNN}-{slug}/task.xml` (or under `hari/` / `harshvardhan/` when siblings pick up). Resumable across sessions.
 
 ## When to actually use this
 
@@ -178,7 +178,7 @@ Huddle isn't for every question. If you know what to build and just need help co
 
 > "help me think through whether to build or buy"
 
-**Solo developers and founders** get the team they don't have. Dileep pushes for distribution and category advantage. Babu validates demand. Maya protects long-term focus. Sreyash (+ Hari + Vinish) parallelizes the implementation.
+**Solo developers and founders** get the team they don't have. Dileep pushes for distribution and category advantage. Babu validates demand. Maya protects long-term focus. Sreyash (+ Hari + Harshvardhan) parallelizes the implementation.
 
 > "I'm a solo dev — what should I ship first? huddle up"
 
@@ -204,7 +204,7 @@ Decisions and milestones are written as raw event files during the session — o
 - **`YYYY-MM-DD.md`** — daily huddle note with topics, perspectives, rationale, rejected paths.
 - **Interactive graph review** — an HTML page that visualizes the conversation graph: 💡 issues, ✅ decisions, ⚔️ challenges, ❓ open questions, 📚 evidence, with edges linking them (informs, challenges, supports, needs-answer). Includes zoom controls, a Timeline tab with a narrative view, and a Spec tab with the full markdown note. Never auto-opens — only launches when you explicitly say "show me the graph."
 
-State lives at `~/config/muthuishere-agent-skills/{repo}/{branch}/huddle/`. Branch-scoped. Cross-branch aware — it reads what was decided on `main` while you're on your feature branch. Background builder manifests live alongside, namespaced per sibling (`sreyash/`, `hari/`, `vinish/`).
+State lives at `~/config/muthuishere-agent-skills/{repo}/{branch}/huddle/`. Branch-scoped. Cross-branch aware — it reads what was decided on `main` while you're on your feature branch. Background builder manifests live alongside, namespaced per sibling (`sreyash/`, `hari/`, `harshvardhan/`).
 
 Resume any time: "resume the huddle." It restores context, active personas, and surfaces new repo activity since your last session.
 
