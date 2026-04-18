@@ -216,6 +216,9 @@ project_context: ~/config/muthuishere-agent-skills/{REPO_NAME}/project.md
 ## Acceptance Criteria
 {from clarify round, or "infer from scenarios"}
 
+## Work Units
+{filled in after Red phase — each unit has: id, requirement_ref, files_touched, tests_owned, status (pending|in-progress|green|blocked), sub_agent_id (if spawned)}
+
 ## Context from Huddle
 - Decisions so far: {bullet list of relevant huddle decisions}
 - Constraints: {timing, dependencies, related PRs}
@@ -304,14 +307,48 @@ Use it to skip redundant scanning. Only probe the code for details not covered
      `## REMOVED Requirements`
 
 3. **Red** — for each scenario, write a failing test in the correct package's
-   test framework. Run tests. Confirm they fail for the expected reason.
+   test framework. Run tests. Confirm they fail for the expected reason. This
+   phase stays with the primary Sreyash agent — the spec is the plan, don't
+   fork the plan.
 
-4. **Green** — write minimum code to pass. Match the target package's
-   conventions (TS in ui, TS+node conventions in api, RN idioms in mobile, etc.).
-   Run tests after each change.
+4. **Plan Green — identify independent work units**. After the spec + red tests
+   are committed to disk, Sreyash inspects the Requirements blocks and groups
+   them into work units:
+   - Each `### Requirement` block is a candidate unit.
+   - Units are **independent** if they touch disjoint file sets (look at the
+     test files each requirement produced + the implementation files it will
+     realistically need).
+   - Units that overlap on files collapse into one unit.
+   - In a monorepo, requirements scoped to different packages are almost
+     always independent.
+   - Write the unit plan to the task manifest under `## Work Units` before
+     spawning anything.
 
-5. **Refactor + expand** — clean up, add implied edge-case tests, ensure full
-   suite green per affected package.
+5. **Green — parallel or sequential based on unit count + provider**.
+   - **If ≥ 2 independent units AND the host supports background sub-agents**
+     (Claude Code does — `Agent` tool with `run_in_background: true`): spawn
+     one background agent per unit, up to a sensible cap (≤ 4 concurrent).
+   - **Else** (1 unit, or host doesn't support concurrency): run green
+     sequentially in the primary agent.
+   - Each parallel sub-agent gets:
+     - The spec path and the specific Requirement id it owns.
+     - The exact file set it is allowed to touch (from the unit plan).
+     - The test file(s) it must make green.
+     - A hard rule: "Do not modify files outside your assigned set. Do not
+       run tests other than those assigned. Return a short status (files
+       written, tests green/red, blockers)."
+   - Sub-agents write directly to the repo on the current branch — no
+     branching, no commits. They update a per-unit section of the task
+     manifest as they progress.
+   - Primary Sreyash waits for all sub-agents to complete (runtime notifies
+     on background completion), merges status into the main manifest.
+   - On blocker in any unit, that unit's status becomes `blocked`; other
+     units continue. Primary surfaces blockers at the end.
+
+6. **Refactor + expand** — after all units return green, primary Sreyash
+   runs the full suite once to catch cross-unit regressions, cleans up
+   duplication, and adds any implied edge-case tests that crossed unit
+   boundaries.
 
 6. **Update manifest** — status: "completed", Artifacts filled in.
 
