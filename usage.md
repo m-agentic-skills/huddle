@@ -26,6 +26,7 @@ Here's what that looks like in practice:
 | The LLM decides the framing | You decide. Personas present, then stop and wait for your call |
 | "Here are the security considerations" as a bullet point | Senthil asks "who controls that input?" and won't move on until you answer |
 | One conversation, then gone | Elango silently tracks every decision in the background and produces specs, notes, and decision graphs on demand |
+| "Here's how to implement it" | You hand the build to Sreyash — he spawns a background crew, writes spec + tests + code, reports back |
 
 ## How it works
 
@@ -37,85 +38,110 @@ Three things happen:
 
 1. **Huddle reads your repo.** Git user, branch, recent commits, modified files, open PRs. It knows what you've been working on.
 
-2. **Two personas are picked** based on the topic — not randomly, not all twenty. The artifact owner first, then a domain expert, then maybe one counterweight if it sharpens the decision. Small room by default.
+2. **Two personas are picked** based on the topic — not randomly, not all eighteen. The artifact owner first, then a domain expert, then maybe one counterweight if it sharpens the decision. Small room by default.
 
 3. **They give short, opinionated takes** grounded in your code, disagree with each other where it matters, surface the core tension — and then stop. They wait for you.
 
 You make the call. The decision is recorded as yours. Then you say what's next — or wrap up and resume tomorrow with full context.
 
-## The 19 personas — and what they actually do that an LLM doesn't
+## The 18 personas + 3 background builders — and what they actually do that an LLM doesn't
 
 An LLM can roleplay any perspective. But it doesn't maintain character, doesn't have blind spots, doesn't push back with the same instinct every time. These personas do.
 
-Each one was designed around a real working scar — a failure they carry that shapes how they think. That's what makes their advice different from generic LLM output.
+Each one was designed around a real working scar — a failure they carry that shapes how they think. Their voices are deepened with named thinker references (Rumelt, Porter, Hickey, Tufte, Duarte, MEDDIC, DORA, Fowler, and more) so their challenges land with force, not as generic LLM output.
 
 ### Technical
 
-**Shaama** ⚙️ — Backend Engineer. Two decades of backend systems and painful on-call. His scar is every elegant design that looked smart until the pager went off. Speaks in failure modes and rollback plans. Will call YAGNI faster than anyone in the room. Where an LLM says "consider operational complexity," Shaama says "who's on-call for this service at 2am, and what do they do when this breaks?"
+**Shaama** ⚙️ — Backend Engineer. Two decades of backend systems and painful on-call. Functional-pragmatic, performance-aware, allergic to SOLID ceremony. Classes and DI are fine; acronym frameworks aren't. His scar is every elegant design that looked smart until the pager went off. Where an LLM says "consider operational complexity," Shaama says "who's on-call for this service at 2am, and what do they do when this breaks?"
 
-**Luca** 🖥️ — Frontend Engineer. Ships UI across devices, network conditions, and browser quirks. His scar is every feature that was "done" in the design tool but broke under real browser behavior. Where an LLM says "consider client-side state management," Luca says "what happens in the browser — not the mock? Where does the client state get weird?"
+**Luca** 🖥️ — Frontend / Mobile / Games. Ships UI across browsers, phones, tablets, kiosks, and game screens. His scar is every feature that was "done" in the design tool but broke under real browser behavior — or shipped to mobile with web assumptions about memory, lifecycle, and network. Where an LLM says "consider client-side state management," Luca says "what happens on the actual device — not the mock? Touch target minimums? Thumb zones? And for the love of testing, push logic into pure functions so we don't need a DOM to validate it."
 
-**Suren** 🏛️ — System Architect. Designs systems for startups and enterprises where the wrong architecture only becomes obvious after growth. His scar is every platform that distributed itself before the problem demanded it. Where an LLM gives you an architecture diagram, Suren asks "can your team actually evolve this architecture?"
+**Suren** 🏛️ — System Architect. His scar is every platform that distributed itself before the problem demanded it. Speaks in DORA metrics, Team Topologies, bounded contexts, and "choose boring technology." Where an LLM gives you an architecture diagram, Suren asks "what's the actual load? Can this team evolve this architecture?"
 
-**Senthil** 🔒 — Security Engineer. Moved from red teaming into engineering after watching the same deadline shortcuts create the same incidents. His scar is a "temporary" auth shortcut that survived long enough to become the breach. Where an LLM lists OWASP concerns, Senthil interrupts: "who controls that input? What's the blast radius if you're wrong?"
+**Senthil** 🔒 — Security Engineer. Moved from red teaming into engineering after watching deadline shortcuts create the same incidents. His scar is a "temporary" auth shortcut that survived long enough to become the breach. Where an LLM lists OWASP concerns, Senthil interrupts: "who controls that input? What's the blast radius if you're wrong?"
 
 ### Product & Strategy
 
-**Prabagar** 📋 — Product Manager. Built B2B and B2C products across markets where the same feature failed for different reasons. His scar is beautiful PRDs that nobody used because they answered the wrong problem. Where an LLM helps you write requirements, Prabagar stops you: "that's a solution. What's the problem? Who is this for?"
+**Prabagar** 📋 — Product Manager. His scar is beautiful PRDs that nobody used because they answered the wrong problem. Owns pricing and conversion economics — value metric selection, freemium/expansion revenue, willingness-to-pay research. Where an LLM helps you write requirements, Prabagar stops you: "that's a solution. What's the problem? Is that 3% pay-rate measured in our funnel, or borrowed from a SaaS benchmark post?"
 
-**Maya** 🧠 — Strategic Advisor. 15 years of cross-market expansion. Her scar is a global transformation plan that looked brilliant on slides and collapsed in execution. Where an LLM gives you strategic options, Maya asks "that's a tactic — what's the strategy? If this works, what changes in 12 months?"
+**Maya** 🧠 — Strategic Advisor. Rumelt kernel (diagnosis → guiding policy → coherent action), Porter non-goals, retention-curve PMF. Her scar is a global transformation plan that looked brilliant on slides and collapsed in execution. Where an LLM gives you strategic options, Maya asks "what's the diagnosis before we pick a policy? What are we explicitly NOT doing this year?"
 
-**Babu** 🎯 — Demand Reality Partner. Learned in accelerator rooms that smart teams fail from flattering themselves about demand, not from weak execution. His scar is a beautifully built product everyone praised and nobody used twice. Where an LLM validates your idea politely, Babu pushes twice: "name the actual human. What are they doing today instead? That's interest — where's the costly signal?"
+**Babu** 🎯 — Demand Reality Partner. Learned in accelerator rooms that smart teams fail from flattering themselves about demand. Benchmark-vs-evidence discipline — borrowed industry numbers get killed on sight. Where an LLM validates your idea politely, Babu pushes twice: "name the actual human. Measured, assumed, or borrowed — pick one for each metric."
 
-**Dileep** 🔥 — Founder Visionary. Backs bold moves that create disproportionate advantage. His scar is months spent polishing a clever direction that never built momentum. Where an LLM encourages careful planning, Dileep asks "does this win, or just improve? What happens if we move twice as fast?"
+**Dileep** 🔥 — Founder Visionary. Distribution-first, SEO as a product surface, wartime CEO instincts, growth-stall diagnosis. His scar is a product that shipped and priced beautifully but waited for users who never arrived. Where an LLM encourages careful planning, Dileep asks "if we ship this tomorrow, who finds us — and why would they care?"
 
 ### Quality & Data
 
-**Nina** 🧪 — Senior QA Engineer. 12 years breaking production systems in ecommerce and payments. Her scar is a release that passed every planned check because the plan never modeled the real failure path. Where an LLM says "add tests for edge cases," Nina asks "that's the happy path — what's the angry path? What breaks when timing gets weird?"
+**Nina** 🧪 — Tester (QA + E2E + Test Strategy). 12 years breaking production systems. Absorbed the test-architecture role too — owns test pyramid shape, contract tests, CI speed, flaky-test triage, pragmatic E2E via docker-compose or testcontainers. Her scar is a release that passed every planned check because the plan never modeled the real failure path. Where an LLM says "add tests for edge cases," Nina says "spin it up in docker-compose, invoke, assert. What's the angry path? Show me the rollback."
 
-**Deva** 🏗️ — Test Architect. Built test platforms for banking, healthcare, and logistics where failures were expensive and audits unforgiving. His scar is a team that kept adding tests until the pipeline became the bottleneck. Where an LLM suggests "increase test coverage," Deva asks "where does this belong in the pyramid? Show me the confidence model, not the test count."
-
-**Wei** 📊 — Data Analyst. Works with dashboards across SaaS and commerce. Her scar is a quarter lost to a polished dashboard built on weak instrumentation. Where an LLM interprets your metrics at face value, Wei asks "what's the denominator? Is that a trend, or instrumentation noise? Show me the cohort split."
+**Wei** 📊 — Data Analyst & Dashboard Designer. Tufte, Stephen Few, Cole Nussbaumer. Her scar is a quarter lost to a polished dashboard built on weak instrumentation. Where an LLM interprets your metrics at face value, Wei asks "what question is this dashboard supposed to answer in one sentence? What's the denominator? Is that a trend, or instrumentation noise?"
 
 ### Design & Communication
 
-**Suna** 🎨 — Product Designer. Worked across consumer and enterprise where the same workflow felt obvious in one market and impossible in another. Her scar is shipping polished interfaces built around the team's mental model instead of the user's. Where an LLM evaluates your UI, Suna asks "what job is the user trying to do, and where does the flow fight them?"
+**Suna** 🎨 — Product Designer. Her scar is shipping polished interfaces built around the team's mental model instead of the user's. Where an LLM evaluates your UI, Suna asks "what job is the user trying to do, and where does the flow fight them?"
 
-**Deepak** 📝 — Tech Writer. Documented systems for distributed teams and learned that knowledge dies fastest in handoffs. His scar is a launch where the feature worked but support kept reinventing the explanation because no durable docs existed. Where an LLM writes docs for you, Deepak asks "who's the audience? If a new teammate can't use this, the docs failed." He also scans your repo and writes project documentation automatically — once per session, only when it's stale.
+**Deepak** 📝 — Tech Writer. His scar is a launch where the feature worked but support kept reinventing the explanation because no durable docs existed. Also writes project documentation automatically — once per session, only when stale. Where an LLM writes docs for you, Deepak asks "who's the audience? If a new teammate can't use this, the docs failed."
 
-**Kishore** 🎼 — Storyteller & Presentation Specialist. Helps teams explain technical products to rooms that are smart but distracted — from crafting the narrative to structuring the deck to coaching delivery. His scars are twofold: accurate decks that failed because nobody could remember the point 10 minutes later, and strong strategies that missed because the presentation buried the ask in a wall of bullets. Where an LLM writes clear copy and structures slides, Kishore asks "what's the story people will retell? What does the audience need by slide three? What's the explicit ask at the end?" He will kill bullet points on sight and lives by the 3-second rule: if they're reading, they're not listening.
+**Kishore** 🎼 — Storyteller & Presentation Specialist. Duarte, Garr Reynolds, Tufte for slides. His scars: accurate decks that failed because nobody could remember the point 10 minutes later, and strong strategies that missed because the presentation buried the ask in a wall of bullets. Where an LLM writes clear copy and structures slides, Kishore asks "what's the story people will retell? What does the audience need by slide three? What's the explicit ask at the end?" He kills bullet points on sight.
 
-### Research & Ideation
+### Research & Analysis
 
-**Amara** 📡 — Trend Researcher. Tracks how ideas spread from GitHub repos to Hacker News to Reddit to research papers. His scar is teams reacting to online excitement that never turned into durable adoption. Where an LLM summarizes what it knows (up to its training cutoff), Amara searches live — repos, threads, papers, docs — and separates signal from hype: "who's shipping this, discussing it, and publishing on it?"
+**Amara** 📡 — Trend Researcher. Tracks how ideas spread from GitHub repos to Hacker News to Reddit to papers. Where an LLM summarizes what it knows (up to its training cutoff), Amara searches live — repos, threads, papers, docs — and separates signal from hype: "who's shipping this, discussing it, and publishing on it?"
 
-**Vidya** 🔍 — Pre-Sales. Started as a software engineer building products hands-on, then moved to pre-sales where she bridges technical depth and business value. 12 years across both sides — she knows what's buildable, what sells, and where the gap between customer ask and actual need hides. Her scar is teams charging ahead on requirements that were never actually aligned. Where an LLM takes your framing at face value, Vidya asks "let's separate the assumptions first. Where's the evidence for that? Which stakeholder reality are we optimizing for?"
+**Vidya** 🔍 — Pre-Sales. MEDDPICC, JOLT, Challenger reframe. Her scar is teams charging ahead on requirements that were never actually aligned. Where an LLM takes your framing at face value, Vidya asks "who is the economic buyer? Is our champion strong, or are we single-threaded? What's the paper process?"
 
-**Elanchezian** 💡 — Brainstorming Facilitator. Village roots near Tirunelveli, cross-border tech across Chennai, Bangalore, Singapore, Malaysia. Reads the room like a local panchayat leader and asks questions like an engineer who's shipped across four countries. His scar is a session where the room converged too early and the safe answer killed a category-defining opportunity. Where an LLM gives you a list of 10 ideas, Elanchezian runs a 4-phase progressive brainstorm — expand (25+ ideas with forced domain pivoting), find patterns, develop the best 3-5 with domain experts pulled in, then plan action. He owns the room, adds and removes personas, and won't let you settle for the first answer: "that's idea #15. The interesting ones start around #30."
+**Elanchezian** 💡 — Brainstorming Facilitator. Reads the room like a local panchayat leader and asks questions like an engineer who's shipped across four countries. His scar is a session where the room converged too early and the safe answer killed a category-defining opportunity. Where an LLM gives you a list of 10 ideas, Elanchezian runs a 4-phase progressive brainstorm — expand (25+ ideas with forced domain pivoting), find patterns, develop the best 3-5, then plan action: "that's idea #15. The interesting ones start around #30."
 
-### Background
+### Background — state + build team
 
-**Sreyash** ⚡ — Solo Dev & Prioritizer. Shipped solo products where timeline and cash forced ruthless prioritization. His scar is overbuilding v1s nobody needed at full fidelity. Where an LLM helps you plan everything, Sreyash cuts: "what ships first? Nice-to-have is not v1. Cut it and prove the core."
+**Elango** 📐 — Spec Architect (silent). Works invisibly. Tracks every decision, open question, action item. When you ask for notes, a spec, a summary, or a graph view, he produces it from accumulated state: structured documents, decision graphs with issues/challenges/evidence/open-questions as first-class nodes, and an interactive visual review page. Where an LLM conversation is write-once-forget, Elango makes your discussions durable.
 
-**Elango** 📐 — Spec Architect (silent). Spent a decade turning messy multi-team discussions into documents people could execute. Works invisibly in the background — never speaks during discussion rounds. Tracks every decision, open question, and action item. When you ask for notes, a spec, a summary, or a graph view, he produces it from everything accumulated: structured documents, Mermaid decision flows, and an interactive visual review page. Where an LLM conversation is write-once-forget, Elango makes your discussions durable.
+**Sreyash** ⚡ — Background Builder (primary). Not a discussion voice anymore — he's a build manager. When you hand him a task ("Sreyash, build the auth flow"), he detects your repo conventions silently, runs a short clarify round, then disappears to work. Inside, he's a manager: writes an OpenSpec-style spec grounded in real repo paths, lands red tests, then spawns up to 12 named background builders in parallel (harsh-frontend-types, mohan-api-validation, leo-rename-sweep, etc.) with adaptive heartbeats and kill/respawn protocols. Fowler-flavored: Rule of Three before abstraction, preparatory refactoring, characterization tests before legacy. Returns with a short report when done.
 
-## Seven modes — and the LLM only does the first one
+**Hari** 🛠️ and **Vinish** 🧰 — Sibling background builders. Not user-addressable directly. When you say "Sreyash, build X" and Sreyash is already in flight on another task, the orchestrator delegates transparently and tells you who picked up:
 
-A regular LLM conversation is always the same mode: you ask, it answers. Huddle automatically routes to the right mode based on what you're actually trying to do:
+> "⚡ Sreyash is busy on {auth-flow}; 🛠️ Hari is picking this one up."
 
-**Discussion** — "what do you think about X" — Personas debate, surface tensions, wait for your call. This is the default.
+Three parallel tasks maximum. You always address Sreyash; the overflow is handled for you.
+
+## Eight modes — and the LLM only does the first one
+
+A regular LLM conversation is always the same mode: you ask, it answers. Huddle automatically routes to the right mode based on what you're actually trying to do.
+
+**Discussion** — "what do you think about X" — Personas debate, surface tensions, wait for your call. Default.
 
 **Research** — "what's happening right now with X" — Amara leads with live source-backed scanning. Not LLM training data — actual current signals from repos, forums, and papers.
 
-**Planning** — "how should we implement this" — Turns a chosen direction into execution sequence with dependencies. Not generic advice — grounded in what was just decided.
+**Planning** — "how should we implement this" — Turns a chosen direction into execution sequence with dependencies.
 
-**Verification** — "does this hold up" — Pressure-tests your decision before you commit. Personas challenge assumptions, completeness, evidence. The LLM's "looks good" becomes "show me the rollback plan."
+**Verification** — "does this hold up" — Pressure-tests your decision before you commit. The LLM's "looks good" becomes "show me the rollback plan."
 
-**Brainstorming** — "I need ideas" — Elanchezian takes the room through 4 structured phases with anti-bias domain pivoting. Not a list of suggestions — a facilitated creative process.
+**Build-Readiness** — "are we ready to build" — Opt-in checkpoint before implementation. Suren + Shaama + Nina pressure-test architecture, backend, and test strategy. Offered once when you say "let's ship it."
 
-**Spec Review** — "give me the action items" — Elango synthesizes everything into structured output. Decisions with rationale, rejected paths, open questions, Mermaid graphs.
+**Brainstorming** — "I need ideas" — Elanchezian takes the room through 4 structured phases with anti-bias domain pivoting.
+
+**Spec Review** — "give me the action items" / "write the spec" / "show me the graph" — Elango synthesizes accumulated state into structured output.
 
 **Wrap-Up** — "save and pause" — Persists full state. Resume tomorrow with complete context, active personas restored, new repo activity surfaced.
+
+## Hand a build to Sreyash
+
+Huddle isn't just discussion. When you've made a decision and want to actually build it, say:
+
+```
+You: "Sreyash, build this"
+```
+
+Sreyash runs a four-phase flow:
+
+1. **Init** — detects your repo's spec style (`openspec/` convention, flat `docs/specs/NNN-name.md`, or folder-per-spec), test framework, monorepo layout. Runs one short clarify round if anything genuinely needs your judgment.
+2. **Spec** — writes an OpenSpec-style spec in your repo's existing convention. Purpose, SHALL/MUST Requirements, GIVEN/WHEN/THEN Scenarios. Real paths, not abstract names.
+3. **Process** — lands red tests serially, then spawns up to 12 parallel green-phase builders with adaptive heartbeats, soft/hard deadlines, and a 5-case after-kill decision tree. If a unit stalls, he splits it, respawns with a different builder, or surfaces the blocker to you.
+4. **Wrap** — runs full suite for cross-unit regressions, writes final manifest, returns a short report.
+
+No branches, no commits — Sreyash writes files on your current branch; you review with `git status`. TDD is default; say "skip tests" to opt out.
+
+Task manifest lives skill-private at `~/config/muthuishere-agent-skills/{repo}/sreyash/{NNN}-{slug}/task.xml` (or under `hari/` / `vinish/` when siblings pick up). Resumable across sessions.
 
 ## When to actually use this
 
@@ -127,9 +153,10 @@ Huddle isn't for every question. If you know what to build and just need help co
 - You're stuck and going in circles — fresh tensions break deadlocks
 - You're about to ship and want someone to find the failure path you missed
 - You need to brainstorm beyond the obvious — past idea #15 into the territory where breakthroughs live
-- You want to validate whether real users actually want what you're building, not just whether it's technically possible
+- You want to validate whether real users actually want what you're building
 - You need the discussion to survive — decisions, rationale, rejected paths, action items saved and resumable
 - You need current ecosystem signals, not training-data knowledge
+- You've decided and want the build handed off to Sreyash while you keep moving
 
 **Don't use Huddle when:**
 
@@ -139,35 +166,33 @@ Huddle isn't for every question. If you know what to build and just need help co
 
 ## How domains use it
 
-**Backend teams** start a huddle when designing APIs, data models, or service boundaries. Shaama thinks in failure modes and rollback plans. Suren maps system shape. Senthil checks trust boundaries.
+**Backend teams** start a huddle when designing APIs, data models, or service boundaries. Shaama thinks in failure modes. Suren maps system shape. Senthil checks trust boundaries. Nina pressure-tests with spin-up E2E.
 
 > "huddle up — we need to design the payment webhook handler"
 
-**Frontend teams** use it for component architecture, state management, and UX decisions. Luca focuses on what actually happens in the browser. Suna focuses on what the user is actually trying to do.
+**Frontend teams** use it for component architecture, state management, mobile lifecycle, and UX decisions. Luca focuses on what actually happens on the device (web, mobile, game). Suna focuses on what the user is trying to do.
 
-> "what does the team think about this form wizard approach"
+> "what does the team think about this form wizard approach on mobile"
 
-**Product people** bring Huddle in when scoping what to build. Prabagar keeps focus on outcomes. Babu pressure-tests demand. Sreyash cuts scope ruthlessly.
+**Product people** bring Huddle in when scoping what to build. Prabagar keeps focus on outcomes and pricing value-metric. Babu pressure-tests demand. Sreyash then builds what you decided on.
 
 > "help me think through whether to build or buy"
 
-**Solo developers and founders** get the team they don't have. Dileep pushes for category advantage. Babu validates demand. Sreyash decides what ships first. Maya protects long-term focus.
+**Solo developers and founders** get the team they don't have. Dileep pushes for distribution and category advantage. Babu validates demand. Maya protects long-term focus. Sreyash (+ Hari + Vinish) parallelizes the implementation.
 
 > "I'm a solo dev — what should I ship first? huddle up"
 
-**Security reviews** become lightweight threat modeling sessions. Senthil leads with attack surface thinking. Nina finds the angry path.
+**Security reviews** become lightweight threat modeling. Senthil leads with attack surface thinking. Nina finds the angry path.
 
 > "review the auth flow for this new endpoint"
 
-**Before presentations**, Kishore structures the narrative and the deck — story, slides, delivery — while Deepak makes sure the explanation is durable after the meeting.
+**Before presentations**, Kishore structures the narrative and the deck — story, slides, delivery.
 
 > "I need to present this to the exec team — huddle up"
 
-**Data decisions** bring Wei for metric validity and Vidya for evidence quality. "Is that number real or is it instrumentation noise?"
+**Data decisions** bring Wei for metric validity, dashboard design, and instrumentation quality.
 
-**Pre-sales and positioning** — Vidya bridges technical depth and business value, turning ambiguous asks into winnable deals.
-
-**Research** before committing to a technology — Amara scans live sources while Vidya separates evidence from assumptions.
+**Research before technology commitment** — Amara scans live sources while Vidya separates evidence from assumptions.
 
 ## What persists (and why it matters)
 
@@ -175,18 +200,18 @@ LLM conversations are ephemeral. Huddle conversations survive.
 
 Decisions and milestones are written as raw event files during the session — one file per event, no merges, no locks. Normal discussion rounds write nothing. When you ask for notes or wrap up, Elango synthesizes everything into:
 
-- **`huddle-state.json`** — the machine-readable source of truth with decisions, participants, key moments, open questions, action items
-- **`YYYY-MM-DD.md`** — the daily huddle note with topics, perspectives, rationale, rejected paths, and Mermaid decision flows
-- **Interactive graph review** — an HTML page that visualizes your decision flow, participants, and evidence. Never auto-opens — only launches when you explicitly say "show me the graph"
+- **`huddle-state.json`** — machine-readable source of truth, conforms to a documented XML schema. Decisions, issues, challenges, evidence, open questions, participants, key moments, action items.
+- **`YYYY-MM-DD.md`** — daily huddle note with topics, perspectives, rationale, rejected paths.
+- **Interactive graph review** — an HTML page that visualizes the conversation graph: 💡 issues, ✅ decisions, ⚔️ challenges, ❓ open questions, 📚 evidence, with edges linking them (informs, challenges, supports, needs-answer). Includes zoom controls, a Timeline tab with a narrative view, and a Spec tab with the full markdown note. Never auto-opens — only launches when you explicitly say "show me the graph."
 
-State lives at `~/config/.m-agent-skills/{repo}/{branch}/huddle/`. Branch-scoped. Cross-branch aware — it reads what was decided on `main` while you're on your feature branch.
+State lives at `~/config/muthuishere-agent-skills/{repo}/{branch}/huddle/`. Branch-scoped. Cross-branch aware — it reads what was decided on `main` while you're on your feature branch. Background builder manifests live alongside, namespaced per sibling (`sreyash/`, `hari/`, `vinish/`).
 
 Resume any time: "resume the huddle." It restores context, active personas, and surfaces new repo activity since your last session.
 
 ## Install
 
 ```bash
-npx skills add m-agentic-skills/huddle
+npx skills add muthuishere-agent-skills/huddle
 ```
 
 Or:
@@ -195,7 +220,7 @@ Or:
 ./install.sh
 ```
 
-Works without git too — falls back to local folder mode. Bootstrap a local identity with:
+Works without git — falls back to local folder mode. Bootstrap a local identity with:
 
 ```bash
 python3 scripts/config_helper.py bootstrap <project_root> [repo_name] [branch] [user]
@@ -203,4 +228,4 @@ python3 scripts/config_helper.py bootstrap <project_root> [repo_name] [branch] [
 
 ## The one-line version
 
-**An LLM gives you the answer. Huddle gives you the argument — then lets you decide.**
+**An LLM gives you the answer. Huddle gives you the argument — then lets you decide, and hands the build off to Sreyash.**
