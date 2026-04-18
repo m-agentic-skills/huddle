@@ -527,7 +527,8 @@
     let cyInstance = null;
 
     function requireFields(obj, fields, context) {
-      const missing = fields.filter((field) => !obj[field]);
+      // Treat null/undefined as missing. Empty strings pass — renderer decides what to show.
+      const missing = fields.filter((field) => obj[field] === undefined || obj[field] === null);
       if (missing.length) throw new Error(`${context} missing required fields: ${missing.join(', ')}`);
     }
 
@@ -589,13 +590,14 @@
 
       decisions.forEach((d, i) => {
         const id = d.id || `d-${i}`;
+        const label = d.topic || d.decision || d.id || `Decision ${i + 1}`;
         nodes.push({
           id,
           kind: d.status === "closed" ? "decision" : "question",
-          label: d.topic,
+          label,
           status: d.status === "closed" ? "agreed" : "open",
           icon: d.status === "closed" ? "✅" : "❓",
-          why_it_matters: d.rationale || d.decision || d.topic,
+          why_it_matters: d.rationale || d.decision || label,
         });
         (d.linked_issues || []).forEach((tgt) => edges.push({ from: tgt, to: id, relation: "informs", label: "informs" }));
         (d.linked_topics || []).forEach((tgt) => edges.push({ from: id, to: tgt, relation: "informs", label: "informs" }));
