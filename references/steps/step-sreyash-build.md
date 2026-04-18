@@ -281,13 +281,23 @@ Why XML:
 
   <work-units>
     <!-- Filled in after Red phase. Each unit is an independent execution slice. -->
-    <unit id="u1" requirement="r1" status="pending" builder="" builder-agent-id="">
+    <unit id="u1" requirement="r1" status="pending" builder="" builder-agent-id="" spawned-at="" soft-deadline="" hard-deadline="" last-heartbeat="">
       <files>
         <file>apps/ui/src/lib/api.ts</file>
       </files>
       <tests>
         <test>apps/ui/src/lib/api.test.ts</test>
       </tests>
+      <progress>
+        <!-- Builder updates this on each heartbeat. -->
+        <tests-green>0</tests-green>
+        <tests-red>3</tests-red>
+        <files-written></files-written>
+        <note></note>
+      </progress>
+      <events>
+        <!-- Audit log. Sreyash appends kill/respawn/extend actions. -->
+      </events>
     </unit>
   </work-units>
 
@@ -470,32 +480,109 @@ Use it to skip redundant scanning. Only probe the code for details not covered
    Sreyash is visible throughout the green phase. He does NOT sit silent
    until all builders return.
 
-   - **On spawn** — announce assignments:
-     > "🔨 Harsh → unit u1 (api.ts types, 3 tests). 🧵 Ishita → unit u2
-     > (ReviewCard date handling, 4 tests). ⚡ Rohan → unit u3 (rename
-     > sweep across 5 files). Spawned in background."
-   - **Periodic check-in** — every ~60-90 seconds while builders are
-     running, Sreyash reads the manifest XML (source of truth) and
-     surfaces a one-line status:
-     > "🔨 Harsh: green (3/3). 🧵 Ishita: 2/4 green, working on date
-     > parse edge case. ⚡ Rohan: in progress, 4/5 files done."
-   - **On any builder completion or blocker** — surface immediately:
-     > "🔨 Harsh: done. u1 green. 12 lines changed in api.ts."
-   - **On blocker** — any builder that hits architectural ambiguity stops
-     and returns with a question. Sreyash surfaces the blocker to the
-     user; other builders continue unless the blocker blocks them too.
-   - **Final wrap** — once all builders return, Sreyash runs the full
-     suite once himself, catches cross-unit regressions, and reports
-     the consolidated result.
+   ### Builder self-reporting cadence (adaptive heartbeats)
 
-   ### Failure handling
+   Each builder updates its own `<unit>` element in the manifest XML at
+   a cadence that matches its status. Sreyash reads those updates; the
+   builder doesn't print to the main channel — the manifest is the
+   comms bus.
 
-   - **Builder crashes or times out**: manifest still has its last
-     `<unit>` state. Sreyash re-spawns the same builder with the same
-     unit id — builder picks up from where it left off.
+   Per-builder heartbeat intervals:
+   - **Just spawned (first 60s)** — write one manifest update at 60s:
+     "parsed manifest, started, running tests". Proves alive.
+   - **Actively making progress** (tests flipping red→green, new files
+     written) — update every **3 min**. Low noise, visible motion.
+   - **Stalled** (no manifest change for 2+ intervals, or 2+ test runs
+     with no new greens) — update every **1 min** with what's blocking.
+   - **In refactor / cleanup** (all tests green, pure housekeeping) —
+     update every **5 min**. Work is stable.
+   - **Blocked** (hit architectural ambiguity, can't proceed) — update
+     immediately: set `status="blocked"`, fill `<blockers>`, stop work.
+
+   ### Sreyash's polling cadence
+
+   Sreyash polls the manifest every **1 min** during green phase. He
+   surfaces a one-line summary to the user at most every **2 min**
+   (noise control), and always surfaces immediately on:
+   - Any builder completion (green or blocked).
+   - Any `<blockers>` entry appearing in a unit.
+   - Any builder hitting a soft or hard deadline.
+
+   ### Manager output templates
+
+   - **On spawn**:
+     > "Spawned 4 builders in background.
+     >   harsh-frontend-types    → unit u1 (3 tests)
+     >   mohan-api-validation    → unit u2 (4 tests)
+     >   leo-rename-sweep        → unit u3 (5 files)
+     >   diego-db-migration      → unit u4 (1 migration)"
+   - **Periodic** (every ~2 min or on change):
+     > "harsh-frontend-types ✔ green · mohan-api-validation ⏳ 2/4 · leo-rename-sweep ⏳ 4/5 · diego-db-migration ⏳ starting"
+   - **On completion**:
+     > "harsh-frontend-types done. u1 green. 12 lines in api.ts."
+   - **On blocker**:
+     > "⚠ diego-db-migration blocked: 'column type ambiguous — INT or BIGINT?'. Other units continuing."
+
+   ### Soft and hard deadlines + kill protocol
+
+   Each unit is stamped with a deadline when spawned, sized by unit
+   complexity:
+
+   | Unit size | Soft deadline | Hard deadline |
+   |---|---|---|
+   | Small (≤3 tests, ≤3 files) | 10 min | 15 min |
+   | Medium (4-8 tests or 4-8 files) | 15 min | 25 min |
+   | Large (>8 tests OR cross-cutting) | 25 min | 40 min |
+
+   **At soft deadline** — Sreyash evaluates the unit:
+   - If manifest shows steady progress (new test passing in the last
+     2-3 min, file set growing toward green) → extend silently by 50%.
+   - If manifest shows no progress (same test counts, same file list
+     for 2 intervals) → warn the builder once via a re-read-and-status
+     prompt; give it 2 more min.
+   - If still no progress after the warn → **kill**.
+
+   **At hard deadline** — Sreyash kills the builder unconditionally,
+   regardless of progress. Runaway builders are worse than slow ones.
+
+   ### After a kill — pick the better path
+
+   When Sreyash kills a builder, he decides what to do next based on
+   the manifest state at kill time:
+
+   1. **Unit was too big** (builder touched files outside the declared
+      set, or ran many tests without greens) → **split the unit** into
+      2-3 smaller units with tighter file sets. Spawn fresh builders
+      (new names, e.g., `harsh-frontend-types-part-1`, `harsh-frontend-types-part-2`).
+   2. **Builder stuck on a specific obstacle** (blockers entry populated
+      or tests failing with a consistent error message) → **surface to
+      the user** with the exact obstacle. Don't respawn blindly.
+   3. **Builder slow but directionally right** (some greens landed, work
+      stalled near the end) → **respawn with a different base-name**
+      (e.g., swap `mohan-*` for `leo-*` — fresh eyes, different role
+      tint). Keep the same file and test set.
+   4. **Builder made zero progress** (no manifest updates after the 60s
+      startup window) → something's broken with the prompt or setup.
+      **Respawn once** with an explicitly tighter prompt. If it still
+      fails, fall through to option 2 (surface to user).
+   5. **Host is degraded** (multiple kills across different builders in
+      the same window) → **drop back to serial**: Sreyash runs the
+      remaining units himself, one at a time. Report to user.
+
+   Each kill + respawn action gets logged in the manifest as an
+   `<event>` entry under the relevant `<unit>`, so the full history is
+   auditable.
+
+   ### Failure handling (crash, timeout, drift)
+
+   - **Builder crashes**: manifest still has its last `<unit>` state.
+     Go through the "after a kill" decision tree (options 1-5).
    - **Builder drifts outside assigned files**: detected by Sreyash on
-     check-in (file-set policed via the manifest). Sreyash stops the
-     builder and re-assigns or corrects.
+     poll (file-set policed via the manifest). Treat as option 1 (too
+     big) — kill and split.
+   - **Multiple builders blocked on the same thing**: likely a
+     shared-context problem. Surface once to the user, hold all
+     blocked units, let the non-blocked ones finish.
 
 6. **Refactor + expand** — after all units return green, primary Sreyash
    runs the full suite once to catch cross-unit regressions, cleans up
