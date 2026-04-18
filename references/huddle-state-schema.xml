@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Canonical schema for huddle-state.json (and for the ?bundle payload loaded
+  by docs/index.html). This is the ONLY contract writers should target —
+  any field not listed here is either optional metadata or drift.
+
+  Convention:
+    - type         primitive type
+    - required     "yes" | "no" (default "no" if unspecified)
+    - list         "yes" if the field is an array of the element shape
+    - default      the value the renderer uses when missing or malformed
+    - coerce       how the renderer handles a value of a different shape
+    - notes        guidance for writers
+
+  Writers (Elango synthesis, persona agents, Sreyash wrap): produce the
+  full shape when you can, but partial/thin entries must still be
+  renderable — docs/index.html's deriveGraphViewFromState is tolerant.
+  Only <graph-view-core> fields are strictly required.
+-->
+<huddle-state-schema version="1">
+
+  <!-- ============================================================== -->
+  <!-- ROOT FIELDS (top-level huddle-state.json)                       -->
+  <!-- ============================================================== -->
+
+  <field name="reponame" type="string" required="yes">
+    <notes>Derived from git remote (owner/repo's repo part) or folder name in local mode.</notes>
+  </field>
+  <field name="branch" type="string" required="yes">
+    <notes>Current git branch, or "main" in local mode. Sanitised for filesystem use.</notes>
+  </field>
+  <field name="last_huddle_date" type="string" required="yes">
+    <notes>YYYY-MM-DD of the most recent wrap-up.</notes>
+  </field>
+  <field name="current_topic" type="string" default="">
+    <notes>Human-readable topic of the most recent / active round.</notes>
+  </field>
+  <field name="meeting_status" type="enum" default="active">
+    <allowed>active</allowed>
+    <allowed>paused</allowed>
+    <allowed>closed</allowed>
+  </field>
+  <field name="latest_summary" type="string" default="">
+    <notes>2-4 sentence prose summary of the huddle. Drives the graph view's main question + decision_why.</notes>
+  </field>
+
+  <!-- ============================================================== -->
+  <!-- DECISIONS (closed huddle outcomes)                              -->
+  <!-- ============================================================== -->
+
+  <array name="decisions" element="decision">
+    <element name="decision">
+      <field name="id" type="string" required="yes">
+        <notes>Prefix with topic-slug-short, e.g. saas-d1-icp-wedge. Must be unique within state.</notes>
+      </field>
+      <field name="topic" type="string" required="yes">
+        <notes>One-line title shown in graph node.</notes>
+      </field>
+      <field name="decision" type="string" required="yes">
+        <notes>One or two sentence statement of what was decided.</notes>
+      </field>
+      <field name="rationale" type="string" required="yes">
+        <notes>
+          3-8 sentence prose. Must NAME: the issues framed, any persona pushback
+          (who + what), and any cited refs. Synthesis parses this prose to
+          populate issues[], challenges[], evidence[].
+        </notes>
+      </field>
+      <field name="status" type="enum" required="yes">
+        <allowed>closed</allowed>
+        <allowed>open</allowed>
+      </field>
+      <array name="linked_issues" element-type="string" default="[]">
+        <notes>Array of issue ids from issues[]. Creates informs edges issue → decision.</notes>
+      </array>
+      <array name="linked_topics" element-type="string" default="[]">
+        <notes>Array of other decision ids this one informs or depends on.</notes>
+      </array>
+    </element>
+  </array>
+
+  <!-- ============================================================== -->
+  <!-- ISSUES (problems framed, not yet decided)                       -->
+  <!-- ============================================================== -->
+
+  <array name="issues" element="issue" default="[]">
+    <element name="issue">
+      <field name="id" type="string" required="yes"/>
+      <field name="label" type="string" required="yes">
+        <notes>Short problem framing. Shown as graph node label.</notes>
+      </field>
+      <field name="detail" type="string" default=""/>
+      <field name="raised_by" type="string" default="">
+        <notes>Persona id from persona-roster.xml (e.g. "maya").</notes>
+      </field>
+    </element>
+  </array>
+
+  <!-- ============================================================== -->
+  <!-- CHALLENGES (pushback against decisions)                          -->
+  <!-- ============================================================== -->
+
+  <array name="challenges" element="challenge" default="[]">
+    <element name="challenge">
+      <field name="id" type="string" required="yes"/>
+      <field name="label" type="string" required="yes"/>
+      <field name="detail" type="string" default=""/>
+      <field name="by" type="string" default="">
+        <notes>Persona id issuing the challenge.</notes>
+      </field>
+      <field name="targets" type="string" default="">
+        <notes>Decision id being challenged. Creates challenges edge.</notes>
+      </field>
+      <field name="resolved" type="boolean" default="false"/>
+    </element>
+  </array>
+
+  <!-- ============================================================== -->
+  <!-- EVIDENCE (citations, refs, supporting material)                  -->
+  <!-- ============================================================== -->
+
+  <array name="evidence" element="evidence-item" default="[]">
+    <element name="evidence-item">
+      <field name="id" type="string" required="yes"/>
+      <field name="label" type="string" default="">
+        <notes>Display label; falls back to ref or id.</notes>
+      </field>
+      <field name="ref" type="string" default="">
+        <notes>URL, book, or citation. Domain/auto-label falls out from this.</notes>
+      </field>
+      <field name="detail" type="string" default=""/>
+      <array name="linked_decisions" element-type="string" default="[]">
+        <notes>Decision ids this evidence supports. Creates supports edge.</notes>
+      </array>
+    </element>
+  </array>
+
+  <!-- ============================================================== -->
+  <!-- PARTICIPANTS (side panel; decorative)                            -->
+  <!-- ============================================================== -->
+
+  <array name="participants" element="participant" default="[]">
+    <element name="participant">
+      <coerce from="string">
+        {id: value, name: value, icon: "👤", meta: "", influence: "Participated in this huddle."}
+      </coerce>
+      <field name="id" type="string" required="yes">
+        <notes>Persona id or user id. Falls back to name if missing.</notes>
+      </field>
+      <field name="name" type="string" required="yes">
+        <notes>Display name. Falls back to id if missing.</notes>
+      </field>
+      <field name="icon" type="string" default="👤"/>
+      <field name="meta" type="string" default="">
+        <notes>Role/title tag. e.g. "Strategy", "Architect". Also accepts <field>role</field> as an alias.</notes>
+      </field>
+      <field name="influence" type="string" default="Participated in this huddle.">
+        <notes>One-line what-they-did description.</notes>
+      </field>
+    </element>
+  </array>
+
+  <!-- ============================================================== -->
+  <!-- KEY MOMENTS (side panel + timeline tab; decorative)              -->
+  <!-- ============================================================== -->
+
+  <array name="key_moments" element="moment" default="[]">
+    <element name="moment">
+      <field name="id" type="string" required="yes"/>
+      <field name="icon" type="string" default="💬"/>
+      <field name="title" type="string" required="yes">
+        <notes>Also accepts <field>summary</field> or <field>type</field> as aliases.</notes>
+      </field>
+      <field name="detail" type="string" default="">
+        <notes>Also accepts <field>summary</field> or an array <field>evidence</field> joined by " • " as fallback.</notes>
+      </field>
+    </element>
+  </array>
+
+  <!-- ============================================================== -->
+  <!-- OPEN QUESTIONS (graph nodes; unresolved)                         -->
+  <!-- ============================================================== -->
+
+  <array name="open_questions" element="question-or-string" default="[]">
+    <element name="question-or-string">
+      <coerce from="string">
+        {id: auto-generated, label: value, detail: value}
+      </coerce>
+      <field name="id" type="string" default="q-{index}"/>
+      <field name="label" type="string" required="yes">
+        <notes>Also accepts <field>question</field> as an alias.</notes>
+      </field>
+      <field name="detail" type="string" default=""/>
+      <field name="targets" type="string" default="">
+        <notes>Decision or issue id this question relates to. Creates needs-answer edge.</notes>
+      </field>
+    </element>
+  </array>
+
+  <!-- ============================================================== -->
+  <!-- ACTION ITEMS + ACTIVE PERSONAS                                   -->
+  <!-- ============================================================== -->
+
+  <array name="action_items" element="string-or-object" default="[]">
+    <notes>Strings or {id, text, owner, due} — renderer tolerates both.</notes>
+  </array>
+
+  <array name="active_personas" element-type="string" default="[]">
+    <notes>Persona ids that shaped the outcome. Used on resume to restore the room.</notes>
+  </array>
+
+  <!-- ============================================================== -->
+  <!-- GRAPH-VIEW CORE (strictly validated)                             -->
+  <!-- Derived, not written. Listed here so writers know what the       -->
+  <!-- renderer considers non-optional.                                 -->
+  <!-- ============================================================== -->
+
+  <graph-view-core>
+    <required field="main_question"/>
+    <required field="decision"/>
+    <required field="decision_why"/>
+    <required field="nodes[].id"/>
+    <required field="nodes[].kind"/>
+    <required field="nodes[].label"/>
+    <required field="nodes[].status"/>
+    <required field="nodes[].icon"/>
+    <required field="nodes[].why_it_matters"/>
+    <required field="edges[].from"/>
+    <required field="edges[].to"/>
+    <required field="edges[].relation"/>
+    <required field="edges[].label"/>
+    <rule>
+      If any of these are missing or malformed, the renderer will surface a
+      fatal error. Everything else is decorative and degrades gracefully.
+    </rule>
+  </graph-view-core>
+
+  <!-- ============================================================== -->
+  <!-- WRITER CHECKLIST                                                 -->
+  <!-- ============================================================== -->
+
+  <writer-checklist>
+    <rule>Always populate all root required fields.</rule>
+    <rule>Every decision id must be unique across decisions[].</rule>
+    <rule>Every challenge.targets must reference an existing decision id.</rule>
+    <rule>Every evidence.linked_decisions[] id must reference an existing decision id.</rule>
+    <rule>Every decision.linked_issues[] id must reference an existing issue id.</rule>
+    <rule>Every open_question.targets must reference an existing decision or issue id (or be empty).</rule>
+    <rule>Do not fabricate. If rationale doesn't name a challenge or cite evidence, leave those arrays empty.</rule>
+    <rule>Prefer the object shape for participants, even when only the id is known — { id, name, icon, meta, influence }.</rule>
+  </writer-checklist>
+
+</huddle-state-schema>
