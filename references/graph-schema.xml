@@ -1,23 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Canonical schema for huddle-state.json (and for the ?bundle payload loaded
-  by docs/index.html). This is the ONLY contract writers should target —
-  any field not listed here is either optional metadata or drift.
+  Graph payload schema.
 
-  Convention:
+  SCOPE: this schema applies ONLY at graph-generation time — the state
+  file that docs/index.html reads and renders as the conversation graph.
+  It does NOT govern raw decision events written during live discussion.
+
+  RAW EVENTS are free-form: {huddle-dir}/raw/*_decision.json files
+  contain whatever prose a persona scribbled on a decision (topic,
+  decision, prose rationale, minimal metadata). They have no schema —
+  personas write loosely, synthesis cleans up.
+
+  THIS SCHEMA kicks in during synthesis (wrap-up or on explicit ask),
+  when Elango reads all raw/*.json + conversation context and PRODUCES
+  huddle-state.json for graph rendering. At that moment — and only then
+  — the output must match this schema so docs/index.html can parse and
+  render it deterministically.
+
+  Convention (per field):
     - type         primitive type
-    - required     "yes" | "no" (default "no" if unspecified)
-    - list         "yes" if the field is an array of the element shape
-    - default      the value the renderer uses when missing or malformed
-    - coerce       how the renderer handles a value of a different shape
-    - notes        guidance for writers
+    - required     "yes" | "no" (default "no")
+    - default      value the renderer uses when missing or malformed
+    - coerce       how the renderer promotes alt shapes (e.g. strings)
+    - notes        guidance for synthesis
 
-  Writers (Elango synthesis, persona agents, Sreyash wrap): produce the
-  full shape when you can, but partial/thin entries must still be
-  renderable — docs/index.html's deriveGraphViewFromState is tolerant.
-  Only <graph-view-core> fields are strictly required.
+  Tolerance policy: partial/thin entries must still be renderable —
+  docs/index.html's deriveGraphViewFromState is intentionally lenient.
+  Only <graph-view-core> fields are strictly required; everything else
+  is decorative and degrades gracefully.
 -->
-<huddle-state-schema version="1">
+<graph-payload-schema version="1">
 
   <!-- ============================================================== -->
   <!-- ROOT FIELDS (top-level huddle-state.json)                       -->
@@ -239,15 +251,16 @@
   <!-- WRITER CHECKLIST                                                 -->
   <!-- ============================================================== -->
 
-  <writer-checklist>
+  <synthesis-checklist>
+    <rule when="applicable">Only at synthesis time. Raw events are free-form and do not follow this schema.</rule>
     <rule>Always populate all root required fields.</rule>
     <rule>Every decision id must be unique across decisions[].</rule>
     <rule>Every challenge.targets must reference an existing decision id.</rule>
     <rule>Every evidence.linked_decisions[] id must reference an existing decision id.</rule>
     <rule>Every decision.linked_issues[] id must reference an existing issue id.</rule>
     <rule>Every open_question.targets must reference an existing decision or issue id (or be empty).</rule>
-    <rule>Do not fabricate. If rationale doesn't name a challenge or cite evidence, leave those arrays empty.</rule>
+    <rule>Do not fabricate. If a decision's rationale prose doesn't name a challenge or cite evidence, leave those arrays empty.</rule>
     <rule>Prefer the object shape for participants, even when only the id is known — { id, name, icon, meta, influence }.</rule>
-  </writer-checklist>
+  </synthesis-checklist>
 
-</huddle-state-schema>
+</graph-payload-schema>
