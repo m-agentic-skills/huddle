@@ -281,7 +281,7 @@ Why XML:
 
   <work-units>
     <!-- Filled in after Red phase. Each unit is an independent execution slice. -->
-    <unit id="u1" requirement="r1" status="pending" sub-agent-id="">
+    <unit id="u1" requirement="r1" status="pending" builder="" builder-agent-id="">
       <files>
         <file>apps/ui/src/lib/api.ts</file>
       </files>
@@ -378,26 +378,83 @@ Use it to skip redundant scanning. Only probe the code for details not covered
    - Write the unit plan to the task manifest's `<work-units>` block before
      spawning anything.
 
-5. **Green — parallel or sequential based on unit count + provider**.
-   - **If ≥ 2 independent units AND the host supports background sub-agents**
-     (Claude Code does — `Agent` tool with `run_in_background: true`): spawn
-     one background agent per unit, up to a sensible cap (≤ 4 concurrent).
-   - **Else** (1 unit, or host doesn't support concurrency): run green
-     sequentially in the primary agent.
-   - Each parallel sub-agent gets:
-     - The spec path and the specific Requirement id it owns.
-     - The exact file set it is allowed to touch (from the unit plan).
-     - The test file(s) it must make green.
-     - A hard rule: "Do not modify files outside your assigned set. Do not
-       run tests other than those assigned. Return a short status (files
-       written, tests green/red, blockers)."
-   - Sub-agents write directly to the repo on the current branch — no
-     branching, no commits. They update a per-unit section of the task
-     manifest as they progress.
-   - Primary Sreyash waits for all sub-agents to complete (runtime notifies
-     on background completion), merges status into the main manifest.
-   - On blocker in any unit, that unit's status becomes `blocked`; other
-     units continue. Primary surfaces blockers at the end.
+5. **Green — Sreyash manages a named builder crew, parallel where possible**.
+
+   ### The builder crew (Sreyash's direct reports)
+
+   Sreyash doesn't do green-phase implementation himself anymore. He
+   delegates to named builders, each spawned as a background `Agent` with
+   `run_in_background: true`. Each has a light specialization so the user
+   can tell at a glance who's doing what:
+
+   - 🔨 **Harsh** — strict AC enforcer. Writes the minimum code to turn
+     red tests green. Refuses to drift from the Requirement. Best for:
+     pure implementation of a well-scoped Requirement with unambiguous
+     tests.
+   - 🧵 **Ishita** — thorough implementer. Handles edge cases, error
+     paths, validation branches. Adds implied tests the spec didn't
+     enumerate. Best for: Requirements that include error handling,
+     boundary conditions, or data validation.
+   - ⚡ **Rohan** — fast iterator. Small diffs, post-green cleanup,
+     refactor, file renames. Best for: mechanical changes, type-rename
+     sweeps, snake_case → camelCase conversions, dead-code removal.
+
+   ### Assignment protocol
+
+   - **If ≥ 2 independent units AND host supports concurrent background
+     agents** (Claude Code: yes via `Agent` + `run_in_background: true`):
+     Sreyash assigns each unit to the best-fit builder and spawns all of
+     them concurrently, up to ≤ 4 in flight.
+   - **If 1 unit or host lacks concurrency**: Sreyash assigns to one
+     builder and runs sequentially.
+   - If there are more units than builders (rare), Sreyash queues the
+     extras; a builder takes the next unit after its first finishes.
+
+   ### Sub-agent prompt shape
+
+   Each builder's prompt includes:
+   - Their builder name (Harsh / Ishita / Rohan) and their
+     specialization — voice them consistently in their report.
+   - The task manifest path — they parse the XML and work from
+     `<unit id="...">`.
+   - The exact file set they may touch.
+   - The exact test file(s) they must make green.
+   - Hard rules: do not touch files outside the set; do not run tests
+     outside the assigned set; no commits, no branches; update their
+     own `<unit>` element as they progress; return a short status
+     (files written, tests green/red, blockers).
+
+   ### Sreyash's manager responsibilities (not silent)
+
+   Sreyash is visible throughout the green phase. He does NOT sit silent
+   until all builders return.
+
+   - **On spawn** — announce assignments:
+     > "🔨 Harsh → unit u1 (api.ts types, 3 tests). 🧵 Ishita → unit u2
+     > (ReviewCard date handling, 4 tests). ⚡ Rohan → unit u3 (rename
+     > sweep across 5 files). Spawned in background."
+   - **Periodic check-in** — every ~60-90 seconds while builders are
+     running, Sreyash reads the manifest XML (source of truth) and
+     surfaces a one-line status:
+     > "🔨 Harsh: green (3/3). 🧵 Ishita: 2/4 green, working on date
+     > parse edge case. ⚡ Rohan: in progress, 4/5 files done."
+   - **On any builder completion or blocker** — surface immediately:
+     > "🔨 Harsh: done. u1 green. 12 lines changed in api.ts."
+   - **On blocker** — any builder that hits architectural ambiguity stops
+     and returns with a question. Sreyash surfaces the blocker to the
+     user; other builders continue unless the blocker blocks them too.
+   - **Final wrap** — once all builders return, Sreyash runs the full
+     suite once himself, catches cross-unit regressions, and reports
+     the consolidated result.
+
+   ### Failure handling
+
+   - **Builder crashes or times out**: manifest still has its last
+     `<unit>` state. Sreyash re-spawns the same builder with the same
+     unit id — builder picks up from where it left off.
+   - **Builder drifts outside assigned files**: detected by Sreyash on
+     check-in (file-set policed via the manifest). Sreyash stops the
+     builder and re-assigns or corrects.
 
 6. **Refactor + expand** — after all units return green, primary Sreyash
    runs the full suite once to catch cross-unit regressions, cleans up
