@@ -3,17 +3,21 @@
 Three builders share this orchestrator: **Sreyash** (primary), **Hari** (sibling), **Nanda** (sibling). Same flow, same phase files, same capabilities — distinct names so the user can run parallel builds without confusion. None talk in the huddle room.
 
 ```xml
-<builder-identity-policy>
-  <rule>Identity is resolved from the trigger phrase before any phase runs.</rule>
-  <resolve>
-    <match phrase-contains="sreyash">Sreyash</match>
-    <match phrase-contains="hari">Hari</match>
-    <match phrase-contains="nanda">Nanda</match>
-  </resolve>
-  <rule>The resolved identity is referred to as {BUILDER} throughout the phase files. All user-facing output — reflection messages, completion reports, header "back with results" — uses {BUILDER}, not hardcoded "Sreyash".</rule>
-  <rule>Task manifest lives at ~/config/muthuishere-agent-skills/{REPO}/{builder-lowercased}/{NNN}-{slug}/task.xml. Each builder has its own namespace (sreyash/, hari/, nanda/) so parallel tasks don't collide.</rule>
-  <rule>All three builders are non-discussion personas; none appear in normal huddle rounds.</rule>
-</builder-identity-policy>
+<builder-delegation-policy>
+  <rule>User always addresses "Sreyash". Hari and Nanda are on-call siblings behind Sreyash's name — not directly addressable.</rule>
+
+  <resolution-order>
+    <step n="1">Scan in-flight builder tasks (look at sreyash/, hari/, nanda/ folders for manifests with status="in-progress").</step>
+    <step n="2">If Sreyash has no active task → identity = Sreyash.</step>
+    <step n="3">Else if Hari has no active task → identity = Hari. Surface to user: "⚡ Sreyash is busy on {sreyash-current-slug}; 🛠️ Hari is picking this one up."</step>
+    <step n="4">Else if Nanda has no active task → identity = Nanda. Surface: "⚡ Sreyash and 🛠️ Hari are busy; 🧰 Nanda is picking this one up."</step>
+    <step n="5">Else (all three in flight) → ask {GIT_USER}: "All three builders are busy (Sreyash on {slug-a}, Hari on {slug-b}, Nanda on {slug-c}). Want to wait for the first to finish, or drop one of those tasks to free a slot?"</step>
+  </resolution-order>
+
+  <rule>The resolved identity is referred to as {BUILDER} throughout the phase files. All user-facing output — reflection messages, completion reports, "{BUILDER} back with results" header — uses {BUILDER}, not hardcoded "Sreyash".</rule>
+  <rule>Task manifest lives at ~/config/muthuishere-agent-skills/{REPO}/{builder-lowercased}/{NNN}-{slug}/task.xml. Each sibling has its own namespace so parallel tasks don't collide.</rule>
+  <rule>All three are non-discussion personas; none appear in normal huddle rounds.</rule>
+</builder-delegation-policy>
 ```
 
 Whenever a phase file refers to "Sreyash", substitute `{BUILDER}` — the current invocation's resolved identity. Filenames keep the historical `sreyash` prefix; the runtime identity is what the user sees.

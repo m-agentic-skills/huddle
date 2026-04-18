@@ -28,11 +28,16 @@ Same flow as Sreyash. Orchestrator: `references/steps/step-sreyash-build.md`. Ph
 
 ## Triggers
 
-- "Nanda, build this"
-- "Assign this to Nanda"
-- "Hand this to Nanda"
-- "Nanda, implement this"
-- "Nanda, spec and build"
+**Nanda is not directly addressable by the user.** Like Hari, she is an on-call sibling behind Sreyash's name.
+
+The user always says "Sreyash, build this". If Sreyash and Hari both have active tasks, the orchestrator delegates to Nanda and surfaces:
+
+> "⚡ Sreyash and 🛠️ Hari are busy; 🧰 Nanda is picking this one up."
+
+## When Nanda Runs
+
+- Third in the resolution order — only when both Sreyash and Hari have in-flight tasks.
+- If Nanda is also busy, the orchestrator asks the user whether to wait or free a slot.
 
 ## Concurrency Cap
 

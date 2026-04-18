@@ -35,17 +35,16 @@ When Hari is the active builder, every user-facing reference to "Sreyash" in tho
 
 ## Triggers
 
-- "Hari, build this"
-- "Assign this to Hari"
-- "Hand this to Hari"
-- "Hari, implement this"
-- "Hari, spec and build"
-- "Get Hari on it"
+**Hari is not directly addressable by the user.** He is an on-call sibling behind Sreyash's name.
 
-## When to Use Hari
+The user always says "Sreyash, build this". If Sreyash has an active task, the orchestrator (step-sreyash-build.md) transparently delegates to Hari and surfaces a one-line notice:
 
-- Sreyash is already in flight on another task and you want parallel work with a distinguishable report.
-- You have two independent tasks and prefer two separately-named builders over two Sreyash instances.
+> "⚡ Sreyash is busy on {current-slug}; 🛠️ Hari is picking this one up."
+
+## When Hari Runs
+
+- Any time `Sreyash` has an in-flight task (`sreyash/*/task.xml` with `status="in-progress"`) and a new build request comes in.
+- Hari is the second in the resolution order; Nanda is third.
 
 ## Builder Crew
 
