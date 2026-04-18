@@ -97,9 +97,10 @@ Identify the domain of `{GIT_USER}`'s message:
 - data/metrics/experiments/dashboard → Wei, Prabagar, Vidya (+ Babu if validation quality matters)
 - latest happenings / trend research / what's happening in the space → Amara, Vidya, Maya (+ Dileep if future-state matters)
 - market/competitive → Vidya, Maya, Babu
-- testing/quality → Nina, Deva, Shaama (+ Senthil if security-related)
-- test strategy/architecture → Deva, Nina, Suren (+ Shaama if infra-related)
-- rapid execution/shipping → Sreyash, Shaama (+ Nina if quality concerns)
+- testing/quality → Nina, Shaama (+ Senthil if security-related)
+- test strategy/architecture → Nina, Suren (+ Shaama if infra-related)
+- build-readiness / pre-implementation pressure-test → Suren, Shaama, Nina (+ Senthil if trust boundaries, Luca if client-heavy, Prabagar if AC is fuzzy)
+- rapid execution/shipping → Shaama (+ Nina if quality concerns). Note: Sreyash is no longer a discussion voice — if the room wants code/spec/tests built, route to the `sreyash-build` sub-task instead.
 - founder / ambition / bold-bet / category question → Dileep, Maya, Babu (+ Sreyash if execution pressure matters)
 - brainstorming/ideation/options/alternatives → Elanchezian takes the room as a sub-task via step-elanchezian-brainstorm.md (not a normal discussion participant — runs the full progressive brainstorm flow)
 - spec creation/requirements → Elango has been capturing in the background — he produces output on demand (not a discussion participant)

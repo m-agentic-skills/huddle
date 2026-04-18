@@ -20,7 +20,7 @@ def run(cmd: list[str]) -> tuple[int, str, str]:
 
 
 def config_path(reponame: str) -> pathlib.Path:
-    return pathlib.Path.home() / "config" / ".m-agent-skills" / reponame / "config.json"
+    return pathlib.Path.home() / "config" / "muthuishere-agent-skills" / reponame / "config.json"
 
 
 def load_config(reponame: str) -> dict[str, object]:
@@ -34,7 +34,7 @@ def load_config(reponame: str) -> dict[str, object]:
 
 
 def load_config_for_project_root(project_root: pathlib.Path) -> tuple[str, dict[str, object]]:
-    base_dir = pathlib.Path.home() / "config" / ".m-agent-skills"
+    base_dir = pathlib.Path.home() / "config" / "muthuishere-agent-skills"
     if not base_dir.exists():
         return "", {}
 

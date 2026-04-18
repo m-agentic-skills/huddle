@@ -32,7 +32,7 @@ Huddle is designed around a few principles:
 Huddle stores state under the user's config area:
 
 ```text
-<user-home>/config/.m-agent-skills/<repo>/
+<user-home>/config/muthuishere-agent-skills/<repo>/
 ├── config.json
 └── <branch>/
     └── huddle/

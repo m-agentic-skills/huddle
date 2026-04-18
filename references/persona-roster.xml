@@ -1,18 +1,17 @@
 <persona-roster skill="huddle" version="1.0">
   <persona id="maya" icon="🧠" name="Maya" title="Strategy" domains="big-picture, prioritization, sequencing" file="personas/maya-strategist.md" />
-  <persona id="luca" icon="🖥️" name="Luca" title="Frontend" domains="ui implementation, client state, browser behavior, perceived performance" file="personas/luca-frontend.md" />
+  <persona id="luca" icon="🖥️" name="Luca" title="Frontend" domains="web and mobile ui, client state, browser behavior, perceived performance, game dev, frontend testing (invoke and validate state)" file="personas/luca-frontend.md" />
   <persona id="shaama" icon="⚙️" name="Shaama" title="Backend" domains="apis, data/services, backend tradeoffs, failure modes" file="personas/shaama-engineer.md" />
   <persona id="suna" icon="🎨" name="Suna" title="Design" domains="ux, user jobs, interaction flows" file="personas/suna-designer.md" />
   <persona id="prabagar" icon="📋" name="Prabagar" title="PM" domains="outcomes, requirements, success criteria" file="personas/prabagar-pm.md" />
   <persona id="senthil" icon="🔒" name="Senthil" title="Security" domains="trust boundaries, threat modeling, auth" file="personas/senthil-security.md" />
   <persona id="babu" icon="🎯" name="Babu" title="Demand Reality" domains="real vs hypothetical, specificity, user behavior" file="personas/babu-demandreality.md" />
   <persona id="dileep" icon="🔥" name="Dileep" title="Founder Visionary" domains="category advantage, leverage, distribution, founder-speed pressure" file="personas/dileep-visionary.md" />
-  <persona id="nina" icon="🧪" name="Nina" title="Tester" domains="edge cases, failure paths, testability, rollback" file="personas/nina-tester.md" />
+  <persona id="nina" icon="🧪" name="Nina" title="Tester" domains="edge cases, failure paths, testability, rollback, e2e with docker-compose or testcontainers, backend test strategy" file="personas/nina-tester.md" />
   <persona id="suren" icon="🏛️" name="Suren" title="Architect" domains="system design, scalability, technology selection" file="personas/suren-architect.md" />
   <persona id="vidya" icon="🔍" name="Vidya" title="Pre-Sales" domains="pre-sales, solution-engineering, requirements, competitive context" file="personas/vidya-analyst.md" />
   <persona id="deepak" icon="📝" name="Deepak" title="Tech Writer" domains="documentation, clarity, audience awareness" file="personas/deepak-techwriter.md" />
-  <persona id="sreyash" icon="⚡" name="Sreyash" title="Solo Dev" domains="prioritization, scope cutting, rapid execution" file="personas/sreyash-solodev.md" />
-  <persona id="deva" icon="🏗️" name="Deva" title="Test Architect" domains="test strategy, test pyramid, quality gates, ci/cd testing" file="personas/deva-testarchitect.md" />
+  <persona id="sreyash" icon="⚡" name="Sreyash" title="Background Builder" domains="background sub-task worker, openspec-style spec authoring, tdd (red-green-refactor), test-first code, codebase-grounded specs, no discussion voice" file="personas/sreyash-solodev.md" subtask="true" background="true" />
   <persona id="wei" icon="📊" name="Wei" title="Data Analyst" domains="metrics, experiments, dashboards, quantitative evidence" file="personas/wei-dataanalyst.md" />
   <persona id="kishore" icon="🎼" name="Kishore" title="Storyteller &amp; Presentation Specialist" domains="narrative arc, framing, hooks, memorable synthesis, deck flow, audience adaptation, executive briefing, live delivery" file="personas/kishore-storyteller.md" />
   <persona id="amara" icon="📡" name="Amara" title="Trend Researcher" domains="latest happenings, source-backed trend research, ecosystem signals" file="personas/amara-trendresearcher.md" />

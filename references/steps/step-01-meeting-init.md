@@ -101,4 +101,4 @@ Wait for `{GIT_USER}` to respond before loading step-02.
 
 ## Cross-Branch Context (all three paths)
 
-Scan sibling branch folders under `~/config/.m-agent-skills/{REPO_NAME}/`. For each other branch, read its most recent huddle note's `## Latest Summary` and `## Decisions` sections. Prioritise `main`, `master`, `dev`, `develop`. Store as `{CROSS_BRANCH_CONTEXT}` and surface if relevant.
+Scan sibling branch folders under `~/config/muthuishere-agent-skills/{REPO_NAME}/`. For each other branch, read its most recent huddle note's `## Latest Summary` and `## Decisions` sections. Prioritise `main`, `master`, `dev`, `develop`. Store as `{CROSS_BRANCH_CONTEXT}` and surface if relevant.

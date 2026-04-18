@@ -27,6 +27,7 @@
     <rule>Research mode is for latest-signals discovery, ecosystem scanning, evidence gathering, and source-backed findings.</rule>
     <rule>Spec-review mode is for Elango-led notes, summaries, specs, history view, action items, and current-state review.</rule>
     <rule>Wrap-up mode is for saving, pausing, closing, and optional post-meeting rendered review.</rule>
+    <rule>Build-readiness mode is for pressure-testing a chosen direction before implementation — catching architecture, backend, and test gaps early so multi-person build doesn't collide mid-sprint. It is opt-in, not a default phase.</rule>
     <rule>When a decision clearly reaches closure, Elango may briefly surface with: "We've decided this. Want to have a look?"</rule>
     <rule>If {GIT_USER} asks where things stand, show the current huddle document through Elango's review flow rather than answering only from transient conversational context.</rule>
     <rule>The readable graph is request-driven. Derive it only for explicit review, status checks, decision check-ins, or wrap-up review.</rule>
@@ -127,6 +128,14 @@
       </steps>
     </route>
 
+    <route id="build-readiness" mode="verification">
+      <when>is this ready to build, build readiness, are we ready to implement, pressure-test this plan, ready for implementation, check this before we build, sanity check the plan, pre-build review, readiness check, is the plan solid, can we start building</when>
+      <goal>Opt-in pre-implementation checkpoint. Surface architecture, backend, and testability gaps in the chosen direction before build begins. Suren, Shaama, and Nina lead; others join if the topic demands (Senthil for trust boundaries, Luca for client-side, Prabagar for AC clarity). User decides whether the plan is ready, needs revision, or needs more discussion.</goal>
+      <steps>
+        <step ref="steps/step-02-discussion.md">Run discussion in verification mode with Suren + Shaama + Nina as the core trio. Each surfaces one concrete gap in their domain and one "what would break first" hypothesis. Elango writes a readiness-check raw event on decision.</step>
+      </steps>
+    </route>
+
     <route id="verification-mode" mode="verification">
       <when>are we done, does this hold up, verify this, double check this, is this actually complete, does this really work, can we trust this, is this safe, validate this decision</when>
       <goal>Switch into verification mode. Pressure-test claims, completeness, evidence, and confidence before treating the work as done.</goal>
@@ -183,6 +192,14 @@
       </steps>
     </route>
 
+    <route id="sreyash-build" mode="spec-review">
+      <when>sreyash build, sreyash build this, assign to sreyash, assign this to sreyash, hand this to sreyash, hand to sreyash, sreyash implement, sreyash implement this, sreyash spec and build, sreyash take this, give this to sreyash, let sreyash handle, let sreyash do this, sreyash do this</when>
+      <goal>Hand a task to Sreyash. He loads repo-level spec config from ~/config/muthuishere-agent-skills/{REPO_NAME}/specconfig.json (asks once, remembers forever — storage_root, test_framework), then asks only for the current task's slug + scope. Spec folder name format: {NNN}-{slug} where NNN is next increment in the storage root (001 if empty). He spawns as a background sub-agent that writes an OpenSpec-style spec, runs TDD (red → green → refactor), and returns with artifacts. The huddle continues while he works; his report surfaces back on completion.</goal>
+      <steps>
+        <step ref="steps/step-sreyash-build.md">Run the Sreyash build sub-task: clarify round, then spawn background agent, then surface return.</step>
+      </steps>
+    </route>
+
     <route id="document-project" mode="spec-review">
       <when>document this project, write project docs, deepak document this, get deepak to document, write the project documentation</when>
       <goal>Deepak does a quick repo scan and writes project.md to the repo config area. Runs once; skips if no changes since last scan unless explicitly requested.</goal>
@@ -206,9 +223,11 @@
     <rule>If a decision just reached closure and the user appears ready to inspect it, prefer the completion-review route and let Elango offer: "We've decided this. Want to have a look?"</rule>
     <rule>Never auto-open the graph review page. Only launch `md_to_html.py` and open the browser when {GIT_USER} explicitly asks to see the graph (e.g. "show me the graph", "open the graph", "open the review page"). For all other status/review requests, summarize in conversation.</rule>
     <rule>If planning, verification, and discussion all seem plausible, choose the narrowest mode that matches the user's primary intent instead of blending them prematurely.</rule>
+    <rule>If {GIT_USER} is about to hand a direction into implementation — language like "let's build this", "let's start", "ship it", "hand this to dev" — offer the build-readiness route once ("Want Suren, Shaama, and Nina to pressure-test this before we build?") and route only if they accept. Never block implementation.</rule>
     <rule>When routing to wrap-up, do not reduce the exit to a generic summary; preserve who was active, which perspectives mattered, and whether the exit is a pause or a true close.</rule>
     <rule>If {GIT_USER} asks to brainstorm, generate ideas, explore options, or says "I need ideas" — route to the brainstorming route. Elanchezian takes the room as a sub-task, controls persona participation, and hands back when done.</rule>
     <rule>Elanchezian can add/remove personas during brainstorming and always has Amara on call for research. This room control is limited to the brainstorming sub-task.</rule>
+    <rule>Sreyash is a background sub-task worker, not a discussion voice. He does not appear in normal discussion rounds. When {GIT_USER} or another persona hands him a task ("Sreyash build this", "this should go to Sreyash"), route to the sreyash-build sub-task. For persona-initiated handoffs, always confirm with {GIT_USER} before starting the clarify round. Sreyash loads repo-level specconfig.json (ask-once / remember-forever), auto-detects monorepos, writes a durable task manifest per task, spawns as a background agent, and returns with spec + tests + code artifacts.</rule>
     <rule>For status or standing questions, do not search only the current huddle note; also inspect repo work state, current branch history, and relevant cross-branch summaries before answering.</rule>
   </disambiguation>
 

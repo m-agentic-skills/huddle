@@ -88,7 +88,9 @@ Never guess. Never fabricate requirements, env vars, or features.
 
 ## 4. Write `project.md`
 
-Save to: `~/config/.m-agent-skills/{REPO_NAME}/project.md`
+Save to: `~/config/muthuishere-agent-skills/{REPO_NAME}/project.md`
+
+Project docs live in the skill config folder only — not in the repo. Keeps repos clean and state skill-private.
 
 ### Sections (in order)
 

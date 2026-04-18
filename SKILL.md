@@ -23,7 +23,7 @@ The user drives. Claude does not make decisions or advance the agenda unilateral
 
 - Identify the user with `git config user.name`. Use their name throughout.
 - Identify the repo with `git remote get-url origin` (parse owner/repo from URL). Fallback: `basename $(git rev-parse --show-toplevel)`.
-- Store huddle memory in `~/config/.m-agent-skills/{reponame}/{branch}/huddle/`.
+- Store huddle memory in `~/config/muthuishere-agent-skills/{reponame}/{branch}/huddle/`.
 - Today's huddle note is `{YYYY-MM-DD}.md`. Always resume if it exists.
 - After presenting perspectives, always stop and ask `{GIT_USER}` for their call or next direction.
 - Never advance to a new topic without the user signalling to move on.
