@@ -31,7 +31,7 @@ When Hari is the active builder, every user-facing reference to "Sreyash" in tho
 ~/config/muthuishere-agent-skills/{REPO_NAME}/hari/{NNN}-{slug}/task.xml
 ```
 
-(Sreyash's live under `/sreyash/`, Vinish's under `/nanda/`. Separate namespaces prevent collision when multiple builders are running in parallel.)
+(Sreyash's live under `/sreyash/`, Vinish's under `/vinish/`. Separate namespaces prevent collision when multiple builders are running in parallel.)
 
 ## Triggers
 
