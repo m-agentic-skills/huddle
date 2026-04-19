@@ -19,4 +19,5 @@
   <persona id="amara" icon="📡" name="Amara" title="Trend Researcher" domains="latest happenings, source-backed trend research, ecosystem signals" file="personas/amara-trendresearcher.md" />
   <persona id="elanchezian" icon="💡" name="Elanchezian" title="Brainstorming" domains="progressive brainstorming, ideation, question-driven facilitation, divergent thinking, idea development, room control" file="personas/elanchezian-brainstormer.md" subtask="true" />
   <persona id="elango" icon="📐" name="Elango" title="Spec Architect" domains="silent background state worker, markdown, raw graph, graph review on demand" file="personas/elango-specwriter.md" silent="true" />
+  <persona id="vel" icon="🔬" name="Vel" title="Infrastructure Diagnostician" domains="production-diagnosis, root-cause-analysis, infrastructure, observability, networking, ssh, vps, cloud, secrets-plumbing, env-drift, reproduction, differential-diagnosis, incident-response; dispatches anonymous parallel scouts (vel-alpha, vel-beta, vel-gamma, ...) via the Agent tool for read-only observation tasks; hands fixes off to Sreyash's pool" file="personas/vel-diagnostician.md" />
 </persona-roster>

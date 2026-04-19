@@ -7,31 +7,33 @@ Third phase. Sreyash becomes a manager, delegates green-phase implementation to 
 ```xml
 <green-phase-policy>
   <naming>
-    <pattern>{base-name}-{scope-slug}</pattern>
-    <base-name-pool order="round-robin">
-      <name>harsh</name>
-      <name>mohan</name>
-      <name>leo</name>
-      <name>diego</name>
-      <name>yuki</name>
-      <name>omar</name>
-      <name>lars</name>
-      <name>kai</name>
-      <name>noor</name>
-      <name>chen</name>
-      <name>zara</name>
-      <name>nikos</name>
-    </base-name-pool>
-    <rule>Add new globally-memorable short names freely if work exceeds the pool.</rule>
-    <scope-slug rule="1-3 hyphen-separated words from unit's Requirement domain (frontend, auth, types, migration, tests, cleanup, api-contract)" />
+    <pattern>{orchestrator}-{greek-letter}</pattern>
+    <greek-letter-pool order="sequential">
+      <letter>alpha</letter>
+      <letter>beta</letter>
+      <letter>gamma</letter>
+      <letter>delta</letter>
+      <letter>epsilon</letter>
+      <letter>zeta</letter>
+      <letter>eta</letter>
+      <letter>theta</letter>
+      <letter>iota</letter>
+      <letter>kappa</letter>
+      <letter>lambda</letter>
+      <letter>mu</letter>
+    </greek-letter-pool>
+    <rule>Orchestrator prefix is {BUILDER} (sreyash / hari / harshvardhan) — keeps namespaces separate when sibling orchestrators run in parallel.</rule>
+    <rule>Examples: sreyash-alpha, sreyash-beta, sreyash-gamma; hari-alpha, hari-beta; harshvardhan-alpha.</rule>
+    <rule>Letters are assigned sequentially to work units (u1 → alpha, u2 → beta, ...). Do not attach scope tags to the builder name — the scope lives in the unit column of the dispatch table, not the builder id.</rule>
+    <rule>If work exceeds 12 letters in one run, continue with alpha-2, beta-2, ... — never fall back to personality names.</rule>
   </naming>
 
-  <role-tint optional="true" enforced="false">
-    <role base-name="harsh">strict AC enforcer: minimum code to turn red tests green</role>
-    <role base-name="mohan">thorough: edge cases, error paths, implied tests</role>
-    <role base-name="leo">fast iterator: small diffs, cleanup, refactor, mechanical sweeps</role>
-    <role base-name="diego|yuki|omar|lars|kai|noor|chen|zara|nikos">general-purpose; picked by scope fit or round-robin</role>
-  </role-tint>
+  <role-tint note="Personality-based role tints removed. All builders are interchangeable executors. Scope discipline is enforced via file-set + test-set in the sub-agent-prompt, not via builder identity." />
+
+  <non-blocking>
+    <rule>Every spawn uses `run_in_background: true`. Main conversation never blocks on builder completion.</rule>
+    <rule>If the user switches topics mid-build, respond to the new topic; builders keep running; table re-renders when relevant again (completion notification, user asks, or synthesis).</rule>
+  </non-blocking>
 
   <assignment-protocol>
     <rule>Concurrency cap: 12 in flight. Lower if work is tightly coupled.</rule>
@@ -40,17 +42,63 @@ Third phase. Sreyash becomes a manager, delegates green-phase implementation to 
     <case condition="1 unit OR host lacks concurrency">Spawn one builder sequentially.</case>
   </assignment-protocol>
 
-  <sub-agent-prompt required-fields="builder-name, role-tint, manifest-path, file-set, test-set, hard-rules">
-    <hard-rule>Do not touch files outside the assigned set.</hard-rule>
-    <hard-rule>Do not run tests outside the assigned set.</hard-rule>
+  <sub-agent-prompt required-fields="builder-name, manifest-path, allowed-modify, allowed-create, allowed-create-under, off-limits, test-set, hard-rules">
+    <!-- Sreyash writes this spec before dispatch. Ambiguity here is the #1 cause of runaway builders. -->
+
+    <field name="builder-name" example="sreyash-alpha" />
+    <field name="manifest-path" example="~/config/muthuishere-agent-skills/{REPO}/sreyash/{slug}/task.xml" />
+
+    <field name="allowed-modify" description="Existing files the builder may edit. Enumerate each; no globs.">
+      <example>
+        apps/ui/src/lib/api.ts
+        apps/ui/src/components/ProfileCard.tsx
+      </example>
+    </field>
+
+    <field name="allowed-create" description="New files the builder may create. Enumerate each; no globs. Empty if pure-modify unit.">
+      <example>
+        apps/ui/src/lib/quality.ts
+        apps/ui/src/lib/quality.test.ts
+      </example>
+    </field>
+
+    <field name="allowed-create-under" required="false" description="Narrow directories for new files whose names aren't knowable up front (e.g., one test per scenario). Never repo root, never a whole app. Omit if everything is pre-listed in allowed-create.">
+      <example>
+        apps/ui/src/components/avatar/
+      </example>
+    </field>
+
+    <field name="off-limits" description="Forbidden paths. Must include sibling builders' allowed-modify + allowed-create so parallel builders never race.">
+      <example>
+        apps/api/**
+        infra/**
+        any file assigned to sreyash-beta or sreyash-gamma this run
+      </example>
+    </field>
+
+    <field name="test-set" description="Exact test files or test names to turn green. Same enumeration discipline as allowed-modify." />
+
+    <hard-rule>Every write must match allowed-modify, allowed-create, or fall under allowed-create-under. Otherwise: stop, set status=blocked, reason `scope violation: attempted {path}`.</hard-rule>
+    <hard-rule>Do not read off-limits paths for context. (That's how scope drift starts.)</hard-rule>
+    <hard-rule>Do not run tests outside test-set.</hard-rule>
     <hard-rule>No commits, no branches.</hard-rule>
     <hard-rule>Update own &lt;unit&gt; element in manifest XML as you progress.</hard-rule>
     <hard-rule>Return short status: files written, tests green/red, blockers.</hard-rule>
   </sub-agent-prompt>
 
+  <scope-spec-derivation>
+    <!-- Sreyash derives scope fields from each unit before spawning. His duty, not the builder's. -->
+    <rule>allowed-modify = every file a Requirement references, nothing more.</rule>
+    <rule>allowed-create enumerated where possible; use allowed-create-under only when names aren't knowable up front.</rule>
+    <rule>off-limits = (everything outside this unit's scope) minus (shared read-only refs). In parallel runs, it MUST include every sibling builder's allowed-modify + allowed-create.</rule>
+    <rule>If scope can't be enumerated cleanly, the unit is too big or vague. Split or clarify with user. Never spawn on fuzzy scope.</rule>
+    <rule>Derivation runs in background inside Sreyash's orchestrator context. Main channel stays silent; user sees only the dispatch table, blockers, and completion — not the planning.</rule>
+  </scope-spec-derivation>
+
   <comms-bus>
-    <rule>The manifest XML is the comms bus. Builders write to their &lt;unit&gt;/&lt;progress&gt;; Sreyash reads.</rule>
-    <rule>Builders do NOT print to the main channel. Sreyash is the only voice on the main channel.</rule>
+    <rule>Manifest XML is the comms bus. Builders write to their &lt;unit&gt;/&lt;progress&gt;; Sreyash reads.</rule>
+    <rule>User-facing turns render progress as a markdown table per `references/dispatch-table.md`. No linear status lines.</rule>
+    <rule>Builders do not print to the main channel. Sreyash is the only voice there.</rule>
   </comms-bus>
 
   <builder-heartbeat-cadence>
@@ -72,20 +120,31 @@ Third phase. Sreyash becomes a manager, delegates green-phase implementation to 
   </sreyash-polling-cadence>
 
   <manager-output-templates>
+    <!-- Templates follow references/dispatch-table.md. Table first, prose below. -->
+
     <template event="on-spawn">
       Spawned N builders in background.
-        harsh-frontend-types    → unit u1 (3 tests)
-        mohan-api-validation    → unit u2 (4 tests)
-        leo-rename-sweep        → unit u3 (5 files)
+
+      | id | unit | status | progress | artifacts |
+      |----|------|--------|----------|-----------|
+      | sreyash-alpha | u1 — frontend types (3 tests) | 🏃 | 0/3 | — |
+      | sreyash-beta  | u2 — api validation (4 tests) | 🏃 | 0/4 | — |
+      | sreyash-gamma | u3 — rename sweep (5 files)   | 🏃 | 0/5 | — |
     </template>
-    <template event="periodic">
-      harsh-frontend-types ✔ green · mohan-api-validation ⏳ 2/4 · leo-rename-sweep ⏳ 4/5
+
+    <template event="periodic-or-completion">
+      ### Sreyash's builders — in flight
+
+      | id | unit | status | progress | artifacts |
+      |----|------|--------|----------|-----------|
+      | sreyash-alpha | u1 — frontend types | ✅ | 3/3 | `apps/ui/src/lib/api.ts` (+12 lines) |
+      | sreyash-beta  | u2 — api validation | 🏃 | 2/4 | `apps/api/src/modules/profile/profile.service.ts` |
+      | sreyash-gamma | u3 — rename sweep   | 🏃 | 4/5 | 4 files touched |
     </template>
-    <template event="on-completion">
-      harsh-frontend-types done. u1 green. 12 lines in api.ts.
-    </template>
+
     <template event="on-blocker">
-      ⚠ diego-db-migration blocked: 'column type ambiguous — INT or BIGINT?'. Other units continuing.
+      Row flips to ⚠; block reason in the artifacts column. One-line surface below the table:
+      "⚠ sreyash-delta blocked: 'column type ambiguous — INT or BIGINT?'. Others continuing."
     </template>
   </manager-output-templates>
 
@@ -112,7 +171,7 @@ Third phase. Sreyash becomes a manager, delegates green-phase implementation to 
   <after-kill-decision-tree>
     <case id="ak-1" condition="builder touched files outside declared set OR ran many tests without greens">
       <diagnosis>Unit was too big</diagnosis>
-      <action>Split unit into 2-3 smaller units with tighter file sets. Spawn fresh builders (e.g., harsh-frontend-types-part-1, harsh-frontend-types-part-2).</action>
+      <action>Split unit into 2-3 smaller units with tighter file sets. Spawn fresh builders with the next Greek letters (e.g., sreyash-eta, sreyash-theta).</action>
     </case>
     <case id="ak-2" condition="&lt;blockers&gt; entry populated OR tests failing with consistent error">
       <diagnosis>Stuck on specific obstacle</diagnosis>
@@ -120,7 +179,7 @@ Third phase. Sreyash becomes a manager, delegates green-phase implementation to 
     </case>
     <case id="ak-3" condition="some greens landed, work stalled near end">
       <diagnosis>Slow but directionally right</diagnosis>
-      <action>Respawn with different base-name (e.g., mohan-* → leo-*). Keep same file + test set.</action>
+      <action>Respawn with next unused Greek letter (e.g., sreyash-beta killed → respawn as sreyash-zeta). Keep same file + test set.</action>
     </case>
     <case id="ak-4" condition="no manifest updates after 60s startup window">
       <diagnosis>Zero progress. Prompt or setup broken.</diagnosis>
