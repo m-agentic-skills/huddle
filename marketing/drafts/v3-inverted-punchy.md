@@ -27,12 +27,16 @@ Answers can be generated. Questions cannot — at least, not the ones that matte
 - What assumption are we making here?
 - Is this solving the real problem, or a version of it?
 
-They come from people who have watched systems break. A developer, a security engineer, a product person, an SRE — each sees a different face of the same system.
+They come from people who have watched systems break. A backend engineer, a security mind, a product manager, an architect — each sees a different face of the same system.
 
 Most of those people aren't in the room when the code gets written. By the time they are, the code is in production.
 
 ## Where Huddle fits
 
-Huddle puts them in the room. Repo-aware, multi-persona, before the system is locked in.
+Huddle puts 21 of them in the room — Shaama on backend failure modes, Senthil on blast radius, Prabagar on value metric, Suren on capacity math, and seventeen more. Repo-aware, opinionated, disagreeing with each other, before the system is locked in.
+
+```bash
+npx skills add muthuishere-agent-skills/huddle
+```
 
 You see what you'd otherwise discover in production.

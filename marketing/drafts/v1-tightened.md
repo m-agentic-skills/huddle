@@ -41,11 +41,17 @@ These questions decide whether a system survives first contact with users.
 
 ## They don't come from one voice
 
-A developer sees implementation. A security engineer sees risk. A product person sees intent. A manager sees feasibility. Each asks different questions — and most of those questions arrive too late, in incident channels and retros.
+A backend engineer sees failure modes. A security engineer sees blast radius. A product manager sees the value metric. An architect sees capacity math. Each asks different questions — and most of those questions arrive too late, in incident channels and retros.
 
 **Huddle** exists to pull those questions to the front.
 
-It runs repo-aware, multi-persona engineering discussions *before* the system is locked in. The developer sees what they'd otherwise discover too late. The manager gets the questions they didn't know how to ask. The security engineer is in the room before the breach, not after.
+It runs repo-aware, multi-persona engineering discussions *before* the system is locked in. 21 named personas — Shaama (backend, rollback-first), Senthil (security, blast radius), Prabagar (PM, value metric), Suren (architect, DORA and boring tech), and more — disagree with each other, grounded in your repo, then stop and wait for your call.
+
+Install:
+
+```bash
+npx skills add muthuishere-agent-skills/huddle
+```
 
 Better systems aren't built by faster answers. They're built by better questions, asked at the right time.
 

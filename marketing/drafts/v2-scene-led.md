@@ -36,20 +36,24 @@ And most of them aren't in the room when the code gets written.
 
 ## What a pre-mortem actually sounds like
 
-Imagine the team from the top of this piece had spent thirty minutes on Wednesday asking each other:
+Imagine the team from the top of this piece had spent thirty minutes on Wednesday in a room with four people:
 
-> **Developer:** What happens when Stripe retries after 24 hours?
+> **Shaama** (backend, 20 years of on-call scars): *What's the failure mode when Stripe retries after 24 hours with a different idempotency key?*
 >
-> **Security:** If I can get my email into another tenant's user table, what do I get access to?
+> **Senthil** (security): *If I can get my email into another tenant's user table, what's the blast radius?*
 >
-> **Product:** What's the support cost of a wrong-tenant email — one ticket, ten, a hundred?
+> **Prabagar** (PM): *What's the support cost of a wrong-tenant email — one ticket, ten, a hundred?*
 >
-> **SRE:** What's the alarm on silent webhook failures?
+> **Vel** (infrastructure diagnostician): *What's the alarm on silent webhook failures? Is it on the logs, the metric, or nothing?*
 
 Four questions. Thirty minutes. Probably five of the six weeks saved.
 
 ## Where Huddle fits
 
-Huddle runs repo-aware, multi-persona engineering discussions — a developer, a security engineer, a product person, an SRE — in the room with you, before the code is locked in. You see what you'd otherwise discover in production.
+Huddle runs repo-aware, multi-persona engineering discussions. 21 personas — a backend engineer with scars, a security mind, a PM who knows MEDDPICC, a strategist, a builder who ships — in the room with you, before the code is locked in. You see what you'd otherwise discover in production.
+
+```bash
+npx skills add muthuishere-agent-skills/huddle
+```
 
 Better systems aren't built by faster answers. They're built by better questions, asked at the right time.
