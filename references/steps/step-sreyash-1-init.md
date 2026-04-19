@@ -29,6 +29,89 @@ Deepak maintains `~/config/muthuishere-agent-skills/{REPO_NAME}/project.md` with
 - User says Deepak → route to `step-deepak-document.md`, return here after.
 - User says "detect yourself" → continue with minimal inline detection; suggest running Deepak later.
 
+### Context cache (per-session)
+
+```xml
+<context-cache-policy>
+  <rule>Read project.md + specconfig.json ONCE per Sreyash session (the lifetime of one spawned background agent). Cache contents in working memory.</rule>
+  <rule>Subsequent tasks within the same session re-use the cached values without re-reading.</rule>
+  <rule>Re-read only if the user announces a stack change ("we migrated to X") or the cache is older than 24h.</rule>
+  <rule>This is the cheapest speed win: avoids 2-3 redundant file reads per task.</rule>
+</context-cache-policy>
+```
+
+## Task Tiering (classify FIRST, ceremony scales to tier)
+
+Sreyash classifies the task at init, before clarify. Each tier has different ceremony in subsequent phases — this is the primary speed lever.
+
+```xml
+<task-tiering-policy>
+  <tier name="TINY" target-duration="≤3 min">
+    <triggers>
+      <trigger>Single file change AND ≤30 LOC AND no logic change</trigger>
+      <trigger>Pure styling (CSS classes, theme, spacing, color, layout)</trigger>
+      <trigger>Pure copy/text/i18n change</trigger>
+      <trigger>Single config value flip</trigger>
+    </triggers>
+    <ceremony>
+      <discovery>1-line: "no data-flow / async / mock risks"</discovery>
+      <spec>None. Inline change description in manifest.</spec>
+      <tests>None. Manual verify in dev environment is the deliverable.</tests>
+      <work-units>None. Sreyash codes inline in his own context — no builder dispatch.</work-units>
+      <manifest>1-line entry, not full XML.</manifest>
+      <return>Files changed + 1-line manual-verify step.</return>
+    </ceremony>
+  </tier>
+
+  <tier name="SMALL" target-duration="5-10 min">
+    <triggers>
+      <trigger>1-3 files AND ≤100 LOC AND single concern</trigger>
+      <trigger>Light logic (one function, one component, one endpoint)</trigger>
+    </triggers>
+    <ceremony>
+      <discovery>Single parallel read pass for the touched files + their direct callers/callees.</discovery>
+      <spec>Inline 3-bullet spec in manifest, NOT a separate spec.md unless repo demands.</spec>
+      <tests>1 test if logic exists. Mock-risk check applies. None if pure UI styling.</tests>
+      <work-units>1 unit. 1 builder OR Sreyash codes inline.</work-units>
+      <manifest>Compact XML.</manifest>
+    </ceremony>
+  </tier>
+
+  <tier name="MEDIUM" target-duration="15-25 min">
+    <triggers>
+      <trigger>4-10 files OR multi-concern OR async/state involved OR cross-file behavior</trigger>
+    </triggers>
+    <ceremony>
+      <discovery>Full data-flow trace, async-dependency map, sibling-implementation read (2-3), mock-risk audit. Parallel reads.</discovery>
+      <spec>Full OpenSpec scaled (Purpose, Requirements, Scenarios).</spec>
+      <tests>TDD red-phase. Mock-risk policy strict.</tests>
+      <work-units>Multiple parallel builders (2-4).</work-units>
+      <manifest>Full XML.</manifest>
+    </ceremony>
+  </tier>
+
+  <tier name="LARGE" target-duration="30-60 min">
+    <triggers>
+      <trigger>>10 files OR cross-package OR migration OR new module</trigger>
+    </triggers>
+    <ceremony>
+      <discovery>Full audit + cross-package contract review + sibling implementations across packages.</discovery>
+      <spec>Full OpenSpec with delta sections if modifying.</spec>
+      <tests>TDD red-phase. Mock-risk strict. Integration tests required where async crosses module boundaries.</tests>
+      <work-units>Many parallel builders (4-12), heartbeat polling, kill protocol active.</work-units>
+      <manifest>Full XML with units, events, audit log.</manifest>
+    </ceremony>
+  </tier>
+
+  <classification-procedure>
+    <rule>Sreyash classifies after reading the task description + scope, BEFORE clarify message. Tier appears in his reflection message: "Detected as MEDIUM tier — async state involved."</rule>
+    <rule>If the user disagrees ("treat this as SMALL"), they can override in the same reflection turn.</rule>
+    <rule>Mid-task tier escalation is allowed: if discovery surfaces complexity that breaks the tier, Sreyash announces "escalating SMALL → MEDIUM, reason: discovered async state surface" and the ceremony upgrades.</rule>
+    <rule>Mid-task tier downgrade is forbidden — once you committed to MEDIUM ceremony, finish it.</rule>
+  </classification-procedure>
+</task-tiering-policy>
+```
+
 ## Spec Config (ask once, remember forever)
 
 Config path: `~/config/muthuishere-agent-skills/{REPO_NAME}/specconfig.json`
@@ -153,6 +236,9 @@ Config path: `~/config/muthuishere-agent-skills/{REPO_NAME}/specconfig.json`
   <rule id="cr-03-one-message">
     One reflection message. No ping-pong confirmation rounds.
   </rule>
+  <rule id="cr-04-discovery-questions" allow="true">
+    After Discovery phase (in step-sreyash-2-spec.md), Sreyash MAY emit ONE more message containing 1-3 targeted questions if discovery surfaced load-bearing ambiguities not addressed by the spec. Bundle all questions into the single message; do not loop.
+  </rule>
 
   <flavour name="huddle-context" when="task came from huddle with existing decisions">
     <step>Load silently: huddle-state.json, project.md, specconfig.json.</step>
@@ -176,6 +262,9 @@ Config path: `~/config/muthuishere-agent-skills/{REPO_NAME}/specconfig.json`
     <allowed>Missing critical AC that can't be inferred.</allowed>
     <allowed>Two equally valid implementation paths, choice is load-bearing.</allowed>
     <allowed>Monorepo target ambiguous AND inference doesn't resolve it.</allowed>
+    <allowed>Discovery phase surfaced an async/race risk the spec doesn't address.</allowed>
+    <allowed>Discovery phase surfaced a mock-vs-real fidelity gap; user must choose how to handle (companion integration test vs manual verify).</allowed>
+    <allowed>Discovery phase showed sibling implementations diverge on a load-bearing pattern; user must pick which to follow.</allowed>
   </ask-whitelist>
 
   <ask-blacklist>

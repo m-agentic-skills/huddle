@@ -1,15 +1,92 @@
-# Step: Sreyash — Spec (scan, write spec, red tests, plan green)
+# Step: Sreyash — Spec (discovery, write spec, red tests, plan green)
 
-Second phase. Runs inside the background agent spawned by the init phase. Produces the spec, writes failing tests (Red), plans the green-phase work units.
+Second phase. Runs inside the background agent spawned by the init phase. Produces the discovery report, writes the spec, writes failing tests (Red), plans the green-phase work units.
 
-## Scan
+## Discovery Phase (mandatory before spec)
 
-Use `project.md` as baseline (tech stack, test framework, package structure, conventions). Only probe the code for what `project.md` doesn't cover:
-- Files near the change site.
-- Local patterns in that module.
-- Direct dependencies of the code you'll touch.
+Sreyash treats the spec as a HYPOTHESIS, not a contract. Discovery is what makes the difference between code that passes mocked tests and code that works in the browser.
 
-For monorepo cross-package work, note any shared types / API contracts between affected packages. Do not re-enumerate what Deepak already documented.
+```xml
+<discovery-policy>
+  <rule id="d-01-scale-to-tier">
+    Discovery depth scales to task tier (set in step-sreyash-1-init.md task-tiering-policy).
+    TINY: 1-line — "no data-flow / async / mock risks." Done.
+    SMALL: single parallel-read pass for touched files + direct callers/callees.
+    MEDIUM: full data-flow trace, async map, sibling reads, mock-risk audit.
+    LARGE: MEDIUM + cross-package contract review + sibling implementations across packages.
+  </rule>
+
+  <rule id="d-02-parallel-reads">
+    All discovery file reads MUST be dispatched in parallel (single message, multiple Read tool calls). Serial reads are the #1 cause of slow Sreyash sessions.
+  </rule>
+
+  <rule id="d-03-five-checks" applies-to="SMALL/MEDIUM/LARGE">
+    For every entity in the spec (component, hook, endpoint, model), Sreyash answers all five:
+    1. **Data flow** — where does this entity's data originate (DB / API / parent prop / context / route param)? Where does it sink (UI render / response body / persisted state)?
+    2. **Async dependencies** — what hooks, queries, contexts, promises gate this change? What's the initial-render state of each (null? empty? loading?)?
+    3. **External state surfaces** — what props from parents, route params, contexts, env-driven config does the change read?
+    4. **Mock-vs-real risk** — for every test mock the spec implies, ask "if this mock returns instantly with seeded data, would the test pass even if the real thing is broken?" If yes → flag MOCK_RISK.
+    5. **Sibling implementations** — find 2-3 similar features in the same repo (same monorepo package or cross-package). Note their handling of the same five checks.
+  </rule>
+
+  <rule id="d-04-discovery-report">
+    Output a discovery report to the manifest under &lt;discovery&gt;. Format below. Max 1 page for MEDIUM/LARGE; 1-3 lines for SMALL; 1 line for TINY.
+  </rule>
+
+  <rule id="d-05-checkpoint-on-risk">
+    If discovery surfaces ANY of these, Sreyash emits a follow-up message (cr-04 in step-1) BEFORE writing the spec:
+    - MOCK_RISK on a load-bearing async dependency
+    - Sibling implementations diverge on a load-bearing pattern
+    - Spec contradicts observed data-flow
+    - Async race condition the spec doesn't address
+  </rule>
+</discovery-policy>
+```
+
+**Discovery report shape (manifest `<discovery>` block):**
+
+```xml
+<discovery tier="MEDIUM" elapsed-sec="42">
+  <data-flow>
+    <entity name="profile.email">
+      <source>useProfile() React Query hook → /api/me</source>
+      <sink>BillingProfileForm input value</sink>
+      <initial-state>null until query resolves (~80-300ms)</initial-state>
+    </entity>
+  </data-flow>
+
+  <async-dependencies>
+    <dep>useProfile() — async, may be null on first render</dep>
+    <dep>tax-quote endpoint — debounced, 200ms</dep>
+  </async-dependencies>
+
+  <external-state>
+    <prop>nav state { snapshot, packKey } from BuyCreditsPage</prop>
+    <context>useUser() (Firebase auth state)</context>
+  </external-state>
+
+  <mock-risks>
+    <risk severity="HIGH">
+      Test mocks useProfile() with synchronous return. Real flow has 80-300ms async window.
+      If mocked test passes, real form may render empty.
+      MITIGATION: companion integration test with real React Query provider, OR record manual-verify step.
+    </risk>
+  </mock-risks>
+
+  <siblings>
+    <sibling path="apps/ui/src/pages/PaymentPage.tsx">
+      Handles useProfile() async with `if (!profile) return &lt;Skeleton /&gt;` guard.
+    </sibling>
+    <sibling path="apps/ui/src/pages/SettingsPage.tsx">
+      Uses defaultValues = {} then resets form via useEffect when profile loads.
+    </sibling>
+  </siblings>
+</discovery>
+```
+
+## Scan (residual — what discovery didn't already cover)
+
+Use `project.md` as baseline (tech stack, test framework, package structure, conventions). For monorepo cross-package work, note any shared types / API contracts between affected packages discovery didn't surface. Do not re-enumerate what Deepak already documented.
 
 ## Spec File Placement Policy
 
@@ -59,6 +136,25 @@ Update task manifest `<artifacts>/<spec>` with the resolved spec path.
   </dimension>
   <dimension name="dependencies" source="package.json | requirements.txt | go.mod" rule="prefer existing; avoid adding new unless task requires" />
 
+  <mock-risk-policy>
+    <rule id="mr-01-flag-async-mocks">
+      Any test mock that replaces an async data fetcher (React Query hook, useSWR, useEffect-based fetch, server context, promise) MUST be flagged at write-time. Sreyash records the mock + the real provider's async window (loading state, initial null/empty, debounce, retry).
+    </rule>
+    <rule id="mr-02-mitigation-required">
+      For every flagged async mock, Sreyash MUST do ONE of:
+      (a) Add a companion integration test that uses the real provider (React Query test wrapper, real context provider, fake server with realistic latency).
+      (b) Record a manual-verify step in the unit's &lt;verification&gt; field describing exactly what to check in the dev environment (browser path, expected initial state, expected post-load state).
+    </rule>
+    <rule id="mr-03-not-green-without-mitigation">
+      A unit with flagged async mocks is NOT considered green until either:
+      - the companion integration test passes, OR
+      - the manual-verify step is recorded and the user has acknowledged it in the return report.
+    </rule>
+    <rule id="mr-04-ui-feeds-visible-state">
+      For UI work where mocked data feeds visible state (form prefill, conditional render, input value), mr-02 is mandatory — never optional. This is the spec-011 lesson: mocked useProfile passed tests, real form rendered empty.
+    </rule>
+  </mock-risk-policy>
+
   <fallback>
     <rule>If a dimension can't be inferred, make the pragmatic choice and log it under task manifest &lt;artifacts&gt;/&lt;assumptions&gt;. Do not ask.</rule>
   </fallback>
@@ -69,9 +165,12 @@ Update task manifest `<artifacts>/<spec>` with the resolved spec path.
 
 For each scenario in the spec, write a failing test in the target package's test framework.
 
+- TINY tier: SKIP. Manual verify is the test.
+- SMALL/MEDIUM/LARGE: write tests as below.
+- For every test, evaluate against `<mock-risk-policy>`. If a mock replaces an async dependency, attach a companion integration test OR a `<verification>` block.
 - Run tests. Confirm they fail for the expected reason.
 - If a test fails for the wrong reason, fix the test before continuing.
-- Red phase stays **serial** in the primary agent — the spec is the plan; don't fork the plan.
+- Independent tests on disjoint files MAY be written via parallel Edit/Write tool calls in a single message. Tests that touch the same file stay serial.
 
 Update task manifest `<artifacts>/<tests>` with the red test paths.
 
@@ -86,6 +185,13 @@ After the spec + red tests are on disk, Sreyash groups the Requirements into wor
   <rule>Units that overlap on files COLLAPSE into one unit.</rule>
   <rule when="monorepo">Requirements scoped to different packages are almost always independent.</rule>
   <rule>Write the unit plan to the task manifest's &lt;work-units&gt; block before spawning anything.</rule>
+
+  <tier-scaling>
+    <tier name="TINY">No work-units. No builder dispatch. Sreyash codes inline in his own context. Skip green-phase entirely; verify manually.</tier>
+    <tier name="SMALL">1 work-unit. Sreyash either codes inline OR spawns a single builder. No heartbeat polling — single short turn.</tier>
+    <tier name="MEDIUM">2-4 parallel builders, normal heartbeat cadence.</tier>
+    <tier name="LARGE">4-12 parallel builders, full heartbeat + kill protocol.</tier>
+  </tier-scaling>
 </plan-green-policy>
 ```
 
