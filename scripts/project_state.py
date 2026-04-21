@@ -167,6 +167,38 @@ def _parse_owner_repo(remote_url):
     return m.group(2), f"{m.group(1)}/{m.group(2)}"
 
 
+DOC_MARKERS = (
+    "README.md", "README.rst", "README.txt", "README",
+    "CLAUDE.md", "AGENTS.md", "CONTRIBUTING.md", "ARCHITECTURE.md",
+)
+DOC_DIRS = ("docs", "documentation", "doc")
+DOC_MIN_BYTES = 200
+
+
+def _detect_existing_docs(project_root):
+    """Return list of relative paths of docs that actually exist and have
+    non-trivial content. Used to decide whether Deepak should offer to
+    generate project docs or just use what's there."""
+    root = pathlib.Path(project_root)
+    found = []
+
+    for name in DOC_MARKERS:
+        p = root / name
+        if p.is_file() and p.stat().st_size >= DOC_MIN_BYTES:
+            found.append(name)
+
+    for dirname in DOC_DIRS:
+        d = root / dirname
+        if not d.is_dir():
+            continue
+        for md in d.rglob("*.md"):
+            if md.is_file() and md.stat().st_size >= DOC_MIN_BYTES:
+                found.append(str(md.relative_to(root)))
+                break
+
+    return found
+
+
 def _has_enough_files(project_root, threshold=20):
     if not os.path.isdir(project_root):
         return False
@@ -311,7 +343,13 @@ def cmd_snapshot(project_root_str):
         head=head,
     )
     project_doc_file = CONFIG_ROOT / reponame / "project-state.json"
-    doc_missing = bool(scan.get("scan") and not project_doc_file.exists() and _has_enough_files(project_root))
+    existing_docs = _detect_existing_docs(project_root)
+    doc_missing = bool(
+        scan.get("scan")
+        and not project_doc_file.exists()
+        and _has_enough_files(project_root)
+        and not existing_docs
+    )
 
     hdir = huddle_dir(reponame, branch)
     state_file = hdir / "huddle-state.json"
@@ -329,6 +367,7 @@ def cmd_snapshot(project_root_str):
         "project_doc_file": str(project_doc_file),
         "project_scan": scan,
         "project_doc_missing": doc_missing,
+        "project_docs_found": existing_docs,
         "saved_state": saved_state,
         "raw_events": _list_raw_events(reponame, branch),
         "cross_branch_context": _scan_cross_branch(reponame, branch),

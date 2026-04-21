@@ -146,7 +146,57 @@ def test_project_state_snapshot(home: Path, tmp: Path) -> None:
     assert len(raw) == 1 and raw[0]["kind"] == "decision", f"raw_events wrong: {raw}"
     branches = [e["branch"] for e in snap["cross_branch_context"]]
     assert branches == ["feature-x"], f"unexpected cross-branch list: {branches}"
+    assert snap["project_docs_found"] == [], "no docs were added, list should be empty"
     print("  [ok] project_state snapshot — identity, raw events, cross-branch, saved_state")
+
+
+def test_project_state_doc_detection(home: Path, tmp: Path) -> None:
+    bare = tmp / "bare-proj"
+    bare.mkdir(parents=True, exist_ok=True)
+    for i in range(25):
+        (bare / f"src{i}.py").write_text("pass\n", encoding="utf-8")
+    out = run(
+        ["python3", "scripts/project_state.py", "snapshot", str(bare)],
+        cwd=ROOT, env={"HOME": str(home)},
+    )
+    snap = json.loads(out)
+    assert snap["project_docs_found"] == [], f"bare repo should have no docs: {snap['project_docs_found']}"
+
+    documented = tmp / "documented-proj"
+    documented.mkdir(parents=True, exist_ok=True)
+    for i in range(25):
+        (documented / f"src{i}.py").write_text("pass\n", encoding="utf-8")
+    (documented / "README.md").write_text("# Project\n\n" + ("Real content. " * 50), encoding="utf-8")
+    (documented / "CLAUDE.md").write_text("# Guide\n\n" + ("More context. " * 50), encoding="utf-8")
+    (documented / "docs").mkdir()
+    (documented / "docs" / "overview.md").write_text("# Overview\n\n" + ("Details. " * 50), encoding="utf-8")
+
+    out = run(
+        ["python3", "scripts/project_state.py", "snapshot", str(documented)],
+        cwd=ROOT, env={"HOME": str(home)},
+    )
+    snap = json.loads(out)
+    found = set(snap["project_docs_found"])
+    assert "README.md" in found, f"README.md not detected: {found}"
+    assert "CLAUDE.md" in found, f"CLAUDE.md not detected: {found}"
+    assert any(p.startswith("docs/") for p in found), f"docs/*.md not detected: {found}"
+    assert snap["project_doc_missing"] is False, \
+        "project_doc_missing should flip false once real docs are present"
+
+    tiny = tmp / "tiny-readme-proj"
+    tiny.mkdir(parents=True, exist_ok=True)
+    for i in range(25):
+        (tiny / f"src{i}.py").write_text("pass\n", encoding="utf-8")
+    (tiny / "README.md").write_text("# x\n", encoding="utf-8")
+    out = run(
+        ["python3", "scripts/project_state.py", "snapshot", str(tiny)],
+        cwd=ROOT, env={"HOME": str(home)},
+    )
+    snap = json.loads(out)
+    assert snap["project_docs_found"] == [], \
+        f"tiny README should not count as docs: {snap['project_docs_found']}"
+
+    print("  [ok] project_state doc detection — README/CLAUDE.md/docs trigger, tiny stubs don't")
 
 
 def test_session_state(home: Path, tmp: Path) -> None:
@@ -255,6 +305,7 @@ def main() -> int:
         print("Running e2e tests...")
         test_global_state(home_global)
         test_project_state_snapshot(home_project, tmp_projects)
+        test_project_state_doc_detection(home_project, tmp_projects)
         test_session_state(home_session, tmp_projects)
         test_md_to_html(sample)
         test_graph_state_py_removed()

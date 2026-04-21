@@ -2,6 +2,18 @@
 
 `GLOBAL_STATE`, `PROJECT_STATE`, and `SESSION_STATE` are already available from step-00. Do not re-run shell commands or re-read files.
 
+## Extract Trigger Topic
+
+Read the user's trigger message. If it carried a topic (e.g. "huddle up — should we split this service?", "start a huddle, let's review yesterday's refactor", "huddle: Postgres vs DynamoDB"), extract it and store as `{INITIAL_TOPIC}`. If the trigger was bare ("start a huddle", "huddle up", "/huddle"), leave `{INITIAL_TOPIC}` empty.
+
+**The trigger topic wins.** If `{INITIAL_TOPIC}` is non-empty, route directly to discussion mode on that topic. Do not show the roster first, do not ask "what do you want to work through today", and do not stop for a Deepak doc offer — those are fallbacks for bare triggers only.
+
+## Ground Personas In Existing Docs
+
+`PROJECT_STATE.project_docs_found` lists doc files already in the repo (README*, CLAUDE.md, AGENTS.md, `docs/*.md`). If non-empty:
+- Quickly scan them (parallel Read tool calls, one per file) before the first persona round so perspectives are grounded in actual project facts, not invented.
+- Do NOT offer to regenerate these — Deepak treats existing docs as source of truth.
+
 ## Extract Session Context
 
 Review everything in this conversation that happened **before the huddle was triggered** — any Claude, Codex, or other agent output. Extract:
@@ -31,14 +43,20 @@ If `PROJECT_STATE.owner_repo` is empty, also surface:
 
 ## Act on next_action
 
-Use the rule from step-00:
-- `PROJECT_STATE.project_doc_missing` → `deepak_doc_offer`
-- else `SESSION_STATE.is_resume` → `resume_summary`
-- else → `show_roster`
+Ordered cascade — first matching rule wins:
 
-### `"deepak_doc_offer"`
+1. `{INITIAL_TOPIC}` non-empty → route to discussion mode on that topic (`show_roster` layout, but skip the "what do you want to work through today" ask — you already know)
+2. `SESSION_STATE.is_resume` → `resume_summary`
+3. `PROJECT_STATE.project_doc_missing` → `deepak_doc_offer` (blocking)
+4. else → `show_roster`
 
-**Guard:** If the repo/folder has fewer than 20 files (empty or near-empty project), skip this entirely — treat as `show_roster` instead. The Python preflight already checks this, but if it slips through, do not offer docs for a nearly empty folder.
+In paths 1 and 4, if `PROJECT_STATE.project_doc_missing` is still true, append Deepak's offer as a **soft nudge** at the end of the first persona round — one line, non-blocking:
+
+> 📝 **Deepak** — heads up, I can write a project doc for this repo any time. Just ask.
+
+### `"deepak_doc_offer"` (blocking — only reached when trigger was bare and repo has no existing docs)
+
+**Guard:** If the repo/folder has fewer than 20 files (empty or near-empty project), skip this entirely — treat as `show_roster` instead.
 
 Deepak speaks first. Do not show the roster yet.
 

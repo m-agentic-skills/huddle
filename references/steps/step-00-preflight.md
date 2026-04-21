@@ -48,10 +48,13 @@ If `python_bin` is `null`, stop immediately: "Python not found. Install Python 3
 
 ## next_action
 
-Compute from the three blobs:
+Step-01 runs the full cascade (trigger topic wins, then resume, then Deepak, then roster). For reference only:
 
-- `PROJECT_STATE.project_doc_missing` → `deepak_doc_offer`
+- `{INITIAL_TOPIC}` non-empty → route straight to discussion on that topic
 - else `SESSION_STATE.is_resume` → `resume_summary`
+- else `PROJECT_STATE.project_doc_missing` → `deepak_doc_offer` (blocking)
 - else → `show_roster`
+
+Deepak's offer downgrades to a soft end-of-round nudge in the first and fourth paths whenever `project_doc_missing` is still true (i.e., the repo genuinely has no README/CLAUDE.md/`docs/`).
 
 Proceed to step-01.
