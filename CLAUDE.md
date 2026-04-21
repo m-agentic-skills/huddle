@@ -30,7 +30,7 @@ e2e/run.py                       # Smoke tests
 
 - **Append-only raw writes, synthesis on demand.** During live discussion, NO file writes happen on normal rounds. On decisions/milestones, a single raw event JSON file is written directly to `{huddle_dir}/raw/` using the Write tool — no Python script, no background process. When the user asks for notes or wraps up, synthesis reads all `raw/*.json` + conversation context, writes `huddle-state.json` + `.md`, and deletes the raw files.
 - **`huddle-state.json` is the synthesized source of truth** for all huddle state (decisions, participants, key moments, open questions, action items). Written only on explicit ask or wrap-up — not every round.
-- **User-level config at `~/config/muthuishere-agent-skills/userconfig.json`** stores `git_user`, `python_bin`, and `gh_available` — detected once globally on first ever huddle run, shared across all repos. Repo-level config at `~/config/muthuishere-agent-skills/{reponame}/config.json` stores only repo-specific values (`reponame`, `owner_repo`, `default_branch`).
+- **User-level config at `~/.config/muthuishere-agent-skills/userconfig.json`** stores `git_user`, `python_bin`, and `gh_available` — detected once globally on first ever huddle run, shared across all repos. Repo-level config at `~/.config/muthuishere-agent-skills/{reponame}/config.json` stores only repo-specific values (`reponame`, `owner_repo`, `default_branch`).
 - **`PYTHON_BIN` detected once globally.** Stored in `userconfig.json` after first detection. All subsequent script calls use this variable. Never hardcode `python3` or `python`.
 - **Graph views are derived on demand** by Elango from `huddle-state.json` + conversation context. The HTML review surface (`docs/index.html`) derives presentation client-side.
 - **`activation-routing.xml`** is the central policy file. It defines modes (discussion, planning, verification, research, spec-review, wrap-up), flow-control rules, and disambiguation logic. Changes to huddle behavior almost always start here.
@@ -45,7 +45,7 @@ All scripts are Python 3, stdlib-only, and output JSON to stdout.
 |---|---|---|
 | `meeting_state.py` | `python3 scripts/meeting_state.py ensure <project_root> <date>` | Single entry point for preflight — derives repo identity, detects `python_bin`, creates state files, runs parallel probes (git user/status/log, PRs, project scan, history), returns JSON with `next_action` and `python_bin` |
 | `huddle_writer.py` | `{PYTHON_BIN} scripts/huddle_writer.py <huddle_dir> '<event_json>'` | Standalone event writer for non-Claude agents (Codex, Copilot, Windsurf). Claude uses Write tool directly instead. |
-| `config_helper.py` | `{PYTHON_BIN} scripts/config_helper.py read|get|set|bootstrap ...` | Per-repo config CRUD at `~/config/muthuishere-agent-skills/{reponame}/config.json` |
+| `config_helper.py` | `{PYTHON_BIN} scripts/config_helper.py read|get|set|bootstrap ...` | Per-repo config CRUD at `~/.config/muthuishere-agent-skills/{reponame}/config.json` |
 | `repo_context.py` | `{PYTHON_BIN} scripts/repo_context.py snapshot` | Gathers repo context (git state, PRs, remote info); supports non-git local-folder mode |
 | `project_state.py` | `{PYTHON_BIN} scripts/project_state.py check|read|write ...` | Weekly project documentation freshness gate |
 | `md_to_html.py` | `{PYTHON_BIN} scripts/md_to_html.py <note.md> [base_url]` | Bundles huddle note + `huddle-state.json` into a gzip+base64 URL fragment and opens the hosted review page |
@@ -61,7 +61,7 @@ This smoke-tests `meeting_state.py ensure`, `md_to_html.py` bundling, and verifi
 ## State Storage Layout
 
 ```
-~/config/muthuishere-agent-skills/
+~/.config/muthuishere-agent-skills/
   userconfig.json                # Global: git_user, python_bin, gh_available (detected once)
   {reponame}/
     config.json                  # Repo-scoped: reponame, owner_repo, default_branch

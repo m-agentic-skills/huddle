@@ -46,7 +46,7 @@ Third phase. Sreyash becomes a manager, delegates green-phase implementation to 
     <!-- Sreyash writes this spec before dispatch. Ambiguity here is the #1 cause of runaway builders. -->
 
     <field name="builder-name" example="sreyash-alpha" />
-    <field name="manifest-path" example="~/config/muthuishere-agent-skills/{REPO}/sreyash/{slug}/task.xml" />
+    <field name="manifest-path" example="~/.config/muthuishere-agent-skills/{REPO}/sreyash/{slug}/task.xml" />
 
     <field name="allowed-modify" description="Existing files the builder may edit. Enumerate each; no globs.">
       <example>

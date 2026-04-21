@@ -8,7 +8,7 @@ Document the agreed storage layout for huddle state and the fallback behavior fo
 
 - Huddle state should live under the user's config area, not directly under the home directory.
 - The base root is:
-  - `<user-home>/config/muthuishere-agent-skills/`
+  - `<user-home>/.config/muthuishere-agent-skills/`
 - Storage should be branch-first so other branch-scoped systems can reuse the same branch folder later.
 - Huddle state should live inside a dedicated `huddle/` folder under the branch root.
 - `config.json` should remain repo-scoped, not branch-scoped.
@@ -16,7 +16,7 @@ Document the agreed storage layout for huddle state and the fallback behavior fo
 ## Final Layout
 
 ```text
-<user-home>/config/muthuishere-agent-skills/
+<user-home>/.config/muthuishere-agent-skills/
 └── <repo>/
     ├── config.json
     └── <branch>/
@@ -28,11 +28,11 @@ Document the agreed storage layout for huddle state and the fallback behavior fo
 Meaning:
 
 - repo config:
-  - `<user-home>/config/muthuishere-agent-skills/<repo>/config.json`
+  - `<user-home>/.config/muthuishere-agent-skills/<repo>/config.json`
 - branch root:
-  - `<user-home>/config/muthuishere-agent-skills/<repo>/<branch>/`
+  - `<user-home>/.config/muthuishere-agent-skills/<repo>/<branch>/`
 - huddle state:
-  - `<user-home>/config/muthuishere-agent-skills/<repo>/<branch>/huddle/`
+  - `<user-home>/.config/muthuishere-agent-skills/<repo>/<branch>/huddle/`
 
 ## Why This Split
 
@@ -94,7 +94,7 @@ At startup, huddle should:
    - fall back to local folder mode
    - reuse stored config by matching `local_project_root`
 3. Use the resolved repo name and branch to place huddle state under:
-   - `<user-home>/config/muthuishere-agent-skills/<repo>/<branch>/huddle/`
+   - `<user-home>/.config/muthuishere-agent-skills/<repo>/<branch>/huddle/`
 
 ## Implemented
 

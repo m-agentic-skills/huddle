@@ -28,7 +28,7 @@ Hari follows the exact same flow as Sreyash:
 When Hari is the active builder, every user-facing reference to "Sreyash" in those files is substituted with "Hari". Task manifests live under a builder-namespaced folder:
 
 ```
-~/config/muthuishere-agent-skills/{REPO_NAME}/hari/{NNN}-{slug}/task.xml
+~/.config/muthuishere-agent-skills/{REPO_NAME}/hari/{NNN}-{slug}/task.xml
 ```
 
 (Sreyash's live under `/sreyash/`, Harshvardhan's under `/harshvardhan/`. Separate namespaces prevent collision when multiple builders are running in parallel.)

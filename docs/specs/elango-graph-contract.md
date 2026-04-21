@@ -27,7 +27,7 @@ Instead:
 ## Artifact Set
 
 ```text
-<user-home>/config/muthuishere-agent-skills/<repo>/<branch>/huddle/
+<user-home>/.config/muthuishere-agent-skills/<repo>/<branch>/huddle/
 ├── <YYYY-MM-DD>.md
 ├── graph-raw.json
 ```

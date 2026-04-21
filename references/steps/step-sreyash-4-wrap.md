@@ -68,7 +68,7 @@ Builders:
 Assumptions:
   - Installed vitest + @testing-library/react (no existing test runner detected).
 
-Manifest: ~/config/muthuishere-agent-skills/{REPO}/sreyash/024-ui-api-contract-alignment/task.xml
+Manifest: ~/.config/muthuishere-agent-skills/{REPO}/sreyash/024-ui-api-contract-alignment/task.xml
 ```
 
 If any unit ended blocked, the report adds a `Blockers:` section with each blocker's text.

@@ -142,12 +142,12 @@ Values:
 
 Separate from huddle state. Repo-scoped (not branch-scoped).
 
-Path: `~/config/muthuishere-agent-skills/{reponame}/project-state.json`
+Path: `~/.config/muthuishere-agent-skills/{reponame}/project-state.json`
 
 ```json
 {
   "reponame": "huddle",
-  "project_doc": "~/config/muthuishere-agent-skills/huddle/project.md",
+  "project_doc": "~/.config/muthuishere-agent-skills/huddle/project.md",
   "generated_at": "2026-04-05T15:00:00+00:00",
   "last_commit": "abc1234",
   "stack": ["Python", "JavaScript"]

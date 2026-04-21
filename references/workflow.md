@@ -10,7 +10,7 @@ Run a repo-scoped, daily, resumable discussion with multi-perspective analysis a
 
 - `{project-root}` = user's active project folder. All `gh` and `git` commands run from here when available.
 - `{skill-root}` = installed root folder of this skill (where `scripts/`, `references/steps/`, `references/` live).
-- `{config-dir}` = `~/config/muthuishere-agent-skills/{REPO_NAME}/`
+- `{config-dir}` = `~/.config/muthuishere-agent-skills/{REPO_NAME}/`
 - `{GIT_USER}` = result of `git config user.name`, or configured/system local user in non-git mode — used to address the user throughout.
 
 ## Meeting Memory Layout

@@ -54,7 +54,7 @@ Discussion · Research · Planning · Verification · **Build-Readiness** · Bra
 
 ## What persists
 
-Nothing lives in your repo unless you put it there. Huddle stores decisions, open questions, action items, and a conversation graph at `~/config/muthuishere-agent-skills/{repo}/{branch}/huddle/`. Resume any time: *"resume the huddle."*
+Nothing lives in your repo unless you put it there. Huddle stores decisions, open questions, action items, and a conversation graph at `~/.config/muthuishere-agent-skills/{repo}/{branch}/huddle/`. Resume any time: *"resume the huddle."*
 
 On demand, Elango synthesizes an interactive graph view — 💡 issues, ✅ decisions, ⚔️ challenges, ❓ open questions, 📚 evidence — with edges linking them, plus a Timeline tab and the full Spec.
 

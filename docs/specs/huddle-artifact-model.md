@@ -112,7 +112,7 @@ Characteristics:
 Store these under the branch huddle directory:
 
 ```text
-<user-home>/config/muthuishere-agent-skills/<repo>/<branch>/huddle/
+<user-home>/.config/muthuishere-agent-skills/<repo>/<branch>/huddle/
 ├── huddle-state.json
 ├── <YYYY-MM-DD>.md
 ├── graph-raw.json

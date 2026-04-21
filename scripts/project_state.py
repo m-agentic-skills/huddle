@@ -27,7 +27,7 @@ SCAN_INTERVAL_DAYS = 7
 
 
 def state_path(reponame):
-    return pathlib.Path.home() / "config" / "muthuishere-agent-skills" / reponame / "project-state.json"
+    return pathlib.Path.home() / ".config" / "muthuishere-agent-skills" / reponame / "project-state.json"
 
 
 def load_state(reponame):

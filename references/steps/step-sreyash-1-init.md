@@ -20,7 +20,7 @@ The huddle loop continues while Sreyash works.
 
 ## Project Context (loaded from Deepak's output)
 
-Deepak maintains `~/config/muthuishere-agent-skills/{REPO_NAME}/project.md` with tech stack, test strategy + framework, package structure, folder shape, env vars, key commands. Sreyash treats this as his primary context source — no re-scanning what Deepak already captured.
+Deepak maintains `~/.config/muthuishere-agent-skills/{REPO_NAME}/project.md` with tech stack, test strategy + framework, package structure, folder shape, env vars, key commands. Sreyash treats this as his primary context source — no re-scanning what Deepak already captured.
 
 **If `project.md` exists** → read silently, use to pre-fill auto-detection.
 
@@ -114,7 +114,7 @@ Sreyash classifies the task at init, before clarify. Each tier has different cer
 
 ## Spec Config (ask once, remember forever)
 
-Config path: `~/config/muthuishere-agent-skills/{REPO_NAME}/specconfig.json`
+Config path: `~/.config/muthuishere-agent-skills/{REPO_NAME}/specconfig.json`
 
 **Schema (single-package):**
 ```json
@@ -213,7 +213,7 @@ Config path: `~/config/muthuishere-agent-skills/{REPO_NAME}/specconfig.json`
   </detection>
 
   <finalize>
-    <write path="~/config/muthuishere-agent-skills/{REPO_NAME}/specconfig.json" />
+    <write path="~/.config/muthuishere-agent-skills/{REPO_NAME}/specconfig.json" />
   </finalize>
 
   <failure-mode>
@@ -282,7 +282,7 @@ Config path: `~/config/muthuishere-agent-skills/{REPO_NAME}/specconfig.json`
 
 On user's "go", Sreyash writes the manifest before spawning the background agent.
 
-**Path**: `~/config/muthuishere-agent-skills/{REPO_NAME}/sreyash/{NNN}{sep}{slug}/task.xml`
+**Path**: `~/.config/muthuishere-agent-skills/{REPO_NAME}/sreyash/{NNN}{sep}{slug}/task.xml`
 
 Task manifests live skill-private (not in the repo). Repos that use `flat-md` have no folder to host `task.md` anyway; skill-private keeps state consistent and repos clean.
 
@@ -298,7 +298,7 @@ Task manifests live skill-private (not in the repo). Repos that use `flat-md` ha
     <handoff-from>{user | persona-id}</handoff-from>
     <spec-style>flat-md</spec-style>      <!-- openspec | folder-md | flat-md -->
     <spec-path>docs/specs/024-ui-api-contract-alignment.md</spec-path>
-    <project-context>~/config/muthuishere-agent-skills/{REPO_NAME}/project.md</project-context>
+    <project-context>~/.config/muthuishere-agent-skills/{REPO_NAME}/project.md</project-context>
   </meta>
 
   <description>

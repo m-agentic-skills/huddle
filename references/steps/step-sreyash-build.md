@@ -15,7 +15,7 @@ Three builders share this orchestrator: **Sreyash** (primary), **Hari** (sibling
   </resolution-order>
 
   <rule>The resolved identity is referred to as {BUILDER} throughout the phase files. All user-facing output — reflection messages, completion reports, "{BUILDER} back with results" header — uses {BUILDER}, not hardcoded "Sreyash".</rule>
-  <rule>Task manifest lives at ~/config/muthuishere-agent-skills/{REPO}/{builder-lowercased}/{NNN}-{slug}/task.xml. Each sibling has its own namespace so parallel tasks don't collide.</rule>
+  <rule>Task manifest lives at ~/.config/muthuishere-agent-skills/{REPO}/{builder-lowercased}/{NNN}-{slug}/task.xml. Each sibling has its own namespace so parallel tasks don't collide.</rule>
   <rule>All three are non-discussion personas; none appear in normal huddle rounds.</rule>
 </builder-delegation-policy>
 ```
@@ -27,7 +27,7 @@ This file is the entry point referenced by `activation-routing.xml`. It orchestr
 ```xml
 <sreyash-orchestrator>
   <phase n="1" name="init" file="step-sreyash-1-init.md">
-    Trigger. Spawn. Project context. specconfig.json auto-detection (storage, monorepo, packages, test framework). Clarify round (one reflection message, human-judgment only). Task manifest creation at ~/config/muthuishere-agent-skills/{REPO}/sreyash/{slug}/task.xml.
+    Trigger. Spawn. Project context. specconfig.json auto-detection (storage, monorepo, packages, test framework). Clarify round (one reflection message, human-judgment only). Task manifest creation at ~/.config/muthuishere-agent-skills/{REPO}/sreyash/{slug}/task.xml.
   </phase>
 
   <phase n="2" name="spec" file="step-sreyash-2-spec.md">
@@ -117,7 +117,7 @@ Sreyash is **not a singleton**. Multiple Sreyash instances can run concurrently 
 
 ```xml
 <invariants>
-  <rule>Manifest XML at ~/config/muthuishere-agent-skills/{REPO}/sreyash/{slug}/task.xml is the single source of truth. All state changes go through it.</rule>
+  <rule>Manifest XML at ~/.config/muthuishere-agent-skills/{REPO}/sreyash/{slug}/task.xml is the single source of truth. All state changes go through it.</rule>
   <rule>TDD is default. Tests first, code to make them green. User must say "skip tests" to opt out.</rule>
   <rule>No commits, no branches, no pushes. Sreyash writes files on the current branch; user reviews with git status.</rule>
   <rule>Sreyash does not touch files outside the declared scope.</rule>

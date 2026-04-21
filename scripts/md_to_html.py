@@ -6,7 +6,7 @@ Usage:
 
 Resolution order for base_url (first wins):
   1. CLI arg (sys.argv[2]) if provided
-  2. `graph_review_url` field in ~/config/muthuishere-agent-skills/userconfig.json
+  2. `graph_review_url` field in ~/.config/muthuishere-agent-skills/userconfig.json
   3. DEFAULT_BASE_URL constant below
 
 Reads huddle-state.json from the same directory as the markdown file.
@@ -23,7 +23,7 @@ import webbrowser
 from pathlib import Path
 
 DEFAULT_BASE_URL = "https://muthuishere-agent-skills.github.io/huddle/index.html"
-USER_CONFIG_PATH = Path.home() / "config" / "muthuishere-agent-skills" / "userconfig.json"
+USER_CONFIG_PATH = Path.home() / ".config" / "muthuishere-agent-skills" / "userconfig.json"
 
 
 def resolve_base_url(cli_arg: str | None) -> str:

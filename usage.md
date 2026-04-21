@@ -148,7 +148,7 @@ Sreyash runs a four-phase flow:
 
 No branches, no commits — Sreyash writes files on your current branch; you review with `git status`. TDD is default; say "skip tests" to opt out.
 
-Task manifest lives skill-private at `~/config/muthuishere-agent-skills/{repo}/sreyash/{NNN}-{slug}/task.xml` (or under `hari/` / `harshvardhan/` when siblings pick up). Resumable across sessions.
+Task manifest lives skill-private at `~/.config/muthuishere-agent-skills/{repo}/sreyash/{NNN}-{slug}/task.xml` (or under `hari/` / `harshvardhan/` when siblings pick up). Resumable across sessions.
 
 ## When to actually use this
 
@@ -215,7 +215,7 @@ Decisions and milestones are written as raw event files during the session — o
 - **`YYYY-MM-DD.md`** — daily huddle note with topics, perspectives, rationale, rejected paths.
 - **Interactive graph review** — an HTML page that visualizes the conversation graph: 💡 issues, ✅ decisions, ⚔️ challenges, ❓ open questions, 📚 evidence, with edges linking them (informs, challenges, supports, needs-answer). Includes zoom controls, a Timeline tab with a narrative view, and a Spec tab with the full markdown note. Never auto-opens — only launches when you explicitly say "show me the graph."
 
-State lives at `~/config/muthuishere-agent-skills/{repo}/{branch}/huddle/`. Branch-scoped. Cross-branch aware — it reads what was decided on `main` while you're on your feature branch. Background builder manifests live alongside, namespaced per sibling (`sreyash/`, `hari/`, `harshvardhan/`).
+State lives at `~/.config/muthuishere-agent-skills/{repo}/{branch}/huddle/`. Branch-scoped. Cross-branch aware — it reads what was decided on `main` while you're on your feature branch. Background builder manifests live alongside, namespaced per sibling (`sreyash/`, `hari/`, `harshvardhan/`).
 
 Resume any time: "resume the huddle." It restores context, active personas, and surfaces new repo activity since your last session.
 

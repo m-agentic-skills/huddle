@@ -1,5 +1,5 @@
 """
-Manage repo-scoped huddle state under ~/config/muthuishere-agent-skills/{reponame}/{branch}/huddle/.
+Manage repo-scoped huddle state under ~/.config/muthuishere-agent-skills/{reponame}/{branch}/huddle/.
 
 Usage:
     python meeting_state.py ensure <project_root> <date>
@@ -45,7 +45,7 @@ def detect_python_bin():
 # ---------------------------------------------------------------------------
 
 def skills_root():
-    return pathlib.Path.home() / "config" / "muthuishere-agent-skills"
+    return pathlib.Path.home() / ".config" / "muthuishere-agent-skills"
 
 
 def userconfig_path():

@@ -23,7 +23,7 @@ Not a discussion persona.
 Same flow as Sreyash. Orchestrator: `references/steps/step-sreyash-build.md`. Phases: `step-sreyash-1-init.md` through `step-sreyash-4-wrap.md`. User-facing name is "Harshvardhan"; manifest namespace is:
 
 ```
-~/config/muthuishere-agent-skills/{REPO_NAME}/harshvardhan/{NNN}-{slug}/task.xml
+~/.config/muthuishere-agent-skills/{REPO_NAME}/harshvardhan/{NNN}-{slug}/task.xml
 ```
 
 ## Triggers
