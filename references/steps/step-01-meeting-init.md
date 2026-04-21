@@ -23,7 +23,7 @@ Store as `{SESSION_CONTEXT}`. Empty if nothing preceded the trigger.
 
 ## Load Persona Roster
 
-Read `{skill-root}/references/persona-roster.xml`.
+Use `{PERSONA_ROSTER}` (already bundled in `HUDDLE_CONTEXT.persona_roster_xml` from step-00 — do not re-read the file).
 
 Use it as the lightweight roster source of truth: `id`, `icon`, `name`, `title`, `domains`, persona file reference.
 
@@ -101,4 +101,4 @@ Wait for `{GIT_USER}` to respond before loading step-02.
 
 ## Cross-Branch Context (all three paths)
 
-Scan sibling branch folders under `~/.config/muthuishere-agent-skills/{REPO_NAME}/`. For each other branch, read its most recent huddle note's `## Latest Summary` and `## Decisions` sections. Prioritise `main`, `master`, `dev`, `develop`. Store as `{CROSS_BRANCH_CONTEXT}` and surface if relevant.
+`{CROSS_BRANCH_CONTEXT}` is already bundled in `HUDDLE_CONTEXT.cross_branch_context` from step-00 — sibling branches sorted with `main`/`master`/`dev`/`develop` first, each with `branch`, `date`, `summary`. Surface if relevant; do not re-scan the filesystem.

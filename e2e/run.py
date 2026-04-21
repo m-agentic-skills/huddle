@@ -169,6 +169,33 @@ def test_graph_state_py_removed() -> None:
     print("  [ok] graph_state.py removed")
 
 
+def test_bundle_context(home: Path) -> None:
+    repo_root = home / ".config" / "muthuishere-agent-skills" / "demo"
+    (repo_root / "main" / "huddle").mkdir(parents=True, exist_ok=True)
+    (repo_root / "feature-x" / "huddle").mkdir(parents=True, exist_ok=True)
+    (repo_root / "main" / "huddle" / "2026-04-10.md").write_text(
+        "# Huddle\n\n## Latest Summary\nAgreed to move config path.\n",
+        encoding="utf-8",
+    )
+    (repo_root / "feature-x" / "huddle" / "2026-04-15.md").write_text(
+        "# Huddle\n\n## Latest Summary\nSketched bundle script.\n",
+        encoding="utf-8",
+    )
+
+    out = run(
+        ["python3", "scripts/bundle_context.py", "demo", "current-branch"],
+        cwd=ROOT,
+        env={"HOME": str(home)},
+    )
+    bundle = json.loads(out)
+    assert "<persona-roster" in bundle["persona_roster_xml"], "roster xml missing"
+    branches = [e["branch"] for e in bundle["cross_branch_context"]]
+    assert branches == ["main", "feature-x"], f"bad branch order: {branches}"
+    assert bundle["cross_branch_context"][0]["summary"] == "Agreed to move config path.", \
+        "main summary not captured"
+    print("  [ok] bundle_context — roster + cross-branch sorted with priority")
+
+
 def test_migrate_legacy_config(home: Path) -> None:
     old_root = home / "config" / "muthuishere-agent-skills" / "oldrepo" / "main" / "huddle"
     old_root.mkdir(parents=True, exist_ok=True)
@@ -200,12 +227,15 @@ def main() -> int:
 
     migrate_home = tmp_root / "migrate-home"
     migrate_home.mkdir(parents=True, exist_ok=True)
+    bundle_home = tmp_root / "bundle-home"
+    bundle_home.mkdir(parents=True, exist_ok=True)
 
     try:
         print("Running e2e tests...")
         test_meeting_state_ensure(env)
         test_md_to_html(sample)
         test_graph_state_py_removed()
+        test_bundle_context(bundle_home)
         test_migrate_legacy_config(migrate_home)
         print("\ne2e ok")
         return 0

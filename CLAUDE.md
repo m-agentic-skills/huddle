@@ -43,7 +43,8 @@ All scripts are Python 3, stdlib-only, and output JSON to stdout.
 
 | Script | Usage | Purpose |
 |---|---|---|
-| `meeting_state.py` | `python3 scripts/meeting_state.py ensure <project_root> <date>` | Single entry point for preflight — derives repo identity, detects `python_bin`, creates state files, runs parallel probes (git user/status/log, PRs, project scan, history), returns JSON with `next_action` and `python_bin` |
+| `meeting_state.py` | `python3 scripts/meeting_state.py ensure <project_root> <date>` | Single entry point for preflight — runs **every** git/gh shell probe in one parallel batch (user/branch/remote/gh-auth/status/log/HEAD/toplevel), then a small phase-2 batch for `gh pr list` + huddle history. Inlines `project_state.evaluate_scan` (no second Python subprocess). Returns JSON with `next_action` and `python_bin`. |
+| `bundle_context.py` | `{PYTHON_BIN} scripts/bundle_context.py <reponame> <branch>` | File-based context (no shell): bundles `persona-roster.xml` + cross-branch huddle summaries. Cheap, cacheable, safe to re-call. |
 | `huddle_writer.py` | `{PYTHON_BIN} scripts/huddle_writer.py <huddle_dir> '<event_json>'` | Standalone event writer for non-Claude agents (Codex, Copilot, Windsurf). Claude uses Write tool directly instead. |
 | `config_helper.py` | `{PYTHON_BIN} scripts/config_helper.py read|get|set|bootstrap ...` | Per-repo config CRUD at `~/.config/muthuishere-agent-skills/{reponame}/config.json` |
 | `repo_context.py` | `{PYTHON_BIN} scripts/repo_context.py snapshot` | Gathers repo context (git state, PRs, remote info); supports non-git local-folder mode |

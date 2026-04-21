@@ -40,38 +40,26 @@ def load_state(reponame):
         return None
 
 
-def run(cmd):
-    r = subprocess.run(cmd, capture_output=True, text=True)
+def run(cmd, cwd=None):
+    r = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd)
     return r.returncode, r.stdout.strip()
 
 
-def cmd_check(reponame):
-    # Gate 1: git repo
-    rc, _ = run(["git", "rev-parse", "--show-toplevel"])
-    if rc != 0:
-        print(json.dumps({"scan": False, "reason": "not a git repo"}))
-        return
-
-    # Gate 2: remote exists (docs scan skipped without remote — caller should surface this)
-    rc, _ = run(["git", "remote", "get-url", "origin"])
-    if rc != 0:
-        print(json.dumps({"scan": False, "reason": "no git remote"}))
-        return
-
-    # Gate 3: at least one commit
-    rc, head = run(["git", "rev-parse", "HEAD"])
-    if rc != 0:
-        print(json.dumps({"scan": False, "reason": "no commits yet"}))
-        return
+def evaluate_scan(reponame, *, has_git_repo, has_remote, head):
+    """Pure decision function. Callers pass pre-fetched git info so we avoid
+    redundant subprocess calls when embedded in meeting_state's parallel pool.
+    """
+    if not has_git_repo:
+        return {"scan": False, "reason": "not a git repo"}
+    if not has_remote:
+        return {"scan": False, "reason": "no git remote"}
+    if not head:
+        return {"scan": False, "reason": "no commits yet"}
 
     state = load_state(reponame)
-
-    # No state → first time → scan
     if state is None:
-        print(json.dumps({"scan": True, "reason": "no project docs yet", "head": head}))
-        return
+        return {"scan": True, "reason": "no project docs yet", "head": head}
 
-    # Parse age
     generated_at = state.get("generated_at", "")
     try:
         generated = datetime.fromisoformat(generated_at.replace("Z", "+00:00"))
@@ -79,31 +67,42 @@ def cmd_check(reponame):
     except Exception:
         age_days = 999
 
-    # Within interval → silent skip
     if age_days < SCAN_INTERVAL_DAYS:
-        print(json.dumps({
+        return {
             "scan": False,
-            "reason": f"docs are {age_days}d old, within {SCAN_INTERVAL_DAYS}d window"
-        }))
-        return
+            "reason": f"docs are {age_days}d old, within {SCAN_INTERVAL_DAYS}d window",
+        }
 
-    # Older than interval — check HEAD
     last_commit = state.get("last_commit", "")
     if last_commit == head:
-        print(json.dumps({
+        return {
             "scan": False,
-            "reason": f"docs are {age_days}d old but no commits since last scan"
-        }))
-        return
+            "reason": f"docs are {age_days}d old but no commits since last scan",
+        }
 
-    # Stale + new commits → offer refresh
-    print(json.dumps({
+    return {
         "scan": True,
         "reason": f"docs are {age_days}d old and repo has changed since last scan",
         "head": head,
         "age_days": age_days,
-        "last_commit": last_commit
-    }))
+        "last_commit": last_commit,
+    }
+
+
+def cmd_check(reponame, cwd=None):
+    rc, _ = run(["git", "rev-parse", "--show-toplevel"], cwd=cwd)
+    has_git_repo = rc == 0
+    has_remote = False
+    head = ""
+    if has_git_repo:
+        rc, _ = run(["git", "remote", "get-url", "origin"], cwd=cwd)
+        has_remote = rc == 0
+        rc, head = run(["git", "rev-parse", "HEAD"], cwd=cwd)
+        if rc != 0:
+            head = ""
+    print(json.dumps(evaluate_scan(
+        reponame, has_git_repo=has_git_repo, has_remote=has_remote, head=head,
+    )))
 
 
 def cmd_read(reponame):
